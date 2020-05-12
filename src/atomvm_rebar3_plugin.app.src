@@ -1,0 +1,14 @@
+{application, atomvm_rebar3_plugin,
+ [{description, "A rebar plugin for manipulating AtomVM AVM files"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {licenses, ["BSD 3-clause"]},
+  {links, []}
+ ]}.
