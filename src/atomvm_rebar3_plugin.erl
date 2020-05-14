@@ -30,5 +30,5 @@
 
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State) ->
-    {ok, State1} = packbeam_plugin_prv:init(State),
+    {ok, State1} = packbeam_provider:init(State),
     {ok, State1}.

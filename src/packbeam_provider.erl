@@ -24,11 +24,13 @@
 %% (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 %%
--module(packbeam_plugin_prv).
+-module(packbeam_provider).
 
 -behaviour(provider).
 
 -export([init/1, do/1, format_error/1]).
+
+-include_lib("kernel/include/file.hrl").
 
 -define(PROVIDER, packbeam).
 -define(DEPS, [compile]).
@@ -64,13 +66,17 @@ format_error(Reason) ->
 %% internal functions
 %%
 
+-record(file_set, {
+    name, out_dir, beam_files, priv_files
+}).
+
 %% @private
 do_packbeam(ProjectApps, Deps) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
     try
-        DepsAvms = [create_packbeam(DepFileSet, []) || DepFileSet <- DepFileSets],
-        [create_packbeam(ProjectAppFileSet, DepsAvms) || ProjectAppFileSet <- ProjectAppFileSets]
+        DepsAvms = [maybe_create_packbeam(DepFileSet, []) || DepFileSet <- DepFileSets],
+        [maybe_create_packbeam(ProjectAppFileSet, DepsAvms) || ProjectAppFileSet <- ProjectAppFileSets]
     catch
         _:E ->
              rebar_api:error("Packbeam creation failed: ~p", [E])
@@ -83,9 +89,12 @@ get_files(App) ->
     OutDir = rebar_app_info:out_dir(App),
     PrivFiles = get_all_files(filename:join(OutDir, "priv")),
     Name = binary_to_list(rebar_app_info:name(App)),
-    N = length(OutDir) + 1,
-    PrivFilesRelative = [filename:join(Name, string:slice(PrivFile, N)) || PrivFile <- PrivFiles],
-    {Name, OutDir, BeamFiles, PrivFilesRelative}.
+    #file_set{
+        name=Name,
+        out_dir=OutDir,
+        beam_files=BeamFiles,
+        priv_files=PrivFiles
+    }.
 
 %% @private
 get_beam_files(Dir) ->
@@ -102,7 +111,46 @@ get_all_files(PrivDir) ->
     ).
 
 %% @private
-create_packbeam({Name, OutDir, BeamFiles, PrivFilesRelative}, AvmFiles) ->
+maybe_create_packbeam(FileSet, AvmFiles) ->
+    #file_set{
+        name=Name,
+        out_dir=OutDir,
+        beam_files=BeamFiles,
+        priv_files=PrivFiles
+    } = FileSet,
+    DirName = filename:dirname(OutDir),
+    TargetAVM = filename:join(DirName, Name ++ ".avm"),
+    case needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles) of
+        true ->
+            create_packbeam(FileSet, AvmFiles);
+        _ ->
+            TargetAVM
+    end.
+
+%% @private
+needs_build(Path, PathList)  ->
+    not filelib:is_file(Path) orelse
+        modified_time(Path) < latest_modified_time(PathList).
+
+%% @private
+modified_time(Path) ->
+    {ok, #file_info{mtime=MTime}} = file:read_file_info(Path, [{time, posix}]),
+    MTime.
+
+%% @private
+latest_modified_time(PathList) ->
+    lists:max([modified_time(Path) || Path <- PathList]).
+
+%% @private
+create_packbeam(FileSet, AvmFiles) ->
+    #file_set{
+        name=Name,
+        out_dir=OutDir,
+        beam_files=BeamFiles,
+        priv_files=PrivFiles
+    } = FileSet,
+    N = length(OutDir) + 1,
+    PrivFilesRelative = [filename:join(Name, string:slice(PrivFile, N)) || PrivFile <- PrivFiles],
     Cwd = rebar_dir:get_cwd(),
     try
         DirName = filename:dirname(OutDir),

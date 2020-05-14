@@ -14,28 +14,16 @@ Add the plugin to your rebar config:
 
 > TODO define a suitable tag
 
-### AtomVM projects
-
-> TODO not net implemented
-
-You can create an AtomVM project using one of two templates.
-
-The `atomvm-app` will create a skeleton project you can use as a starting point for an AtomVM project.
-
-    shell$ rebar3 new atomvm-app name=myapp
-
-Alternatively, the `atomvm-lib` template can be used to create an AtomVM library, suitable for inclusion in different AtomVM applications.
-
-    shell$ rebar3 new atomvm-lib name=mylib
-
-
 ### `packbeam` target
 
 You may use the `packbeam` target to generate an AtomVM packbeam file containing your application and its dependencies.
 
     $ rebar3 packbeam
-    <Plugin Output>
-
+    ===> Compiling atomvm_rebar3_plugin
+    ===> Compiling atomvm_rebar3_plugin
+    ===> Verifying dependencies...
+    ===> Compiling mylib
+    ===> AVM file written to : mylib.avm
 
 ### `esp32-flash` target
 
@@ -59,3 +47,18 @@ Alternatively, the following environment variables may be used to control the sa
 * ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_BAUD
 
 Any setting specified on the command line take precendence over environment variable settings, which in turn take precedence over the default values specified above.
+
+
+## AtomVM projects
+
+> TODO not net implemented
+
+You can create an AtomVM project using one of two templates.
+
+The `atomvm-app` will create a skeleton project you can use as a starting point for an AtomVM project.
+
+    shell$ rebar3 new atomvm-app name=myapp
+
+Alternatively, the `atomvm-lib` template can be used to create an AtomVM library, suitable for inclusion in different AtomVM applications.
+
+    shell$ rebar3 new atomvm-lib name=mylib
