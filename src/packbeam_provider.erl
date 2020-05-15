@@ -34,6 +34,9 @@
 
 -define(PROVIDER, packbeam).
 -define(DEPS, [compile]).
+-define(OPTS, [
+    {ext, $e, "external", undefined, "External AVM modules"}
+]).
 
 %%
 %% provider implementation
@@ -46,7 +49,7 @@ init(State) ->
             {bare, true},                 % The task can be run by the user, always true
             {deps, ?DEPS},                % The list of dependencies
             {example, "rebar3 packbeam"}, % How to use the plugin
-            {opts, []},                   % list of options understood by the plugin
+            {opts, ?OPTS},                   % list of options understood by the plugin
             {short_desc, "A rebar plugin to create packbeam files"},
             {desc, "A rebar plugin to create packbeam files"}
     ]),
@@ -55,8 +58,18 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    do_packbeam(rebar_state:project_apps(State), lists:usort(rebar_state:all_deps(State))),
-    {ok, State}.
+    case get_external_avms(rebar_state:command_args(State)) of
+        {ok, ExternalAVMs} ->
+            do_packbeam(
+                rebar_state:project_apps(State),
+                lists:usort(rebar_state:all_deps(State)),
+                ExternalAVMs
+            ),
+            {ok, State};
+        {error, Reason} ->
+            io:format("~p~n", [Reason]),
+            {error, Reason}
+    end.
 
 -spec format_error(any()) ->  iolist().
 format_error(Reason) ->
@@ -66,17 +79,40 @@ format_error(Reason) ->
 %% internal functions
 %%
 
+get_external_avms(Args) ->
+    get_external_avms(Args, []).
+
+get_external_avms([], Accum) ->
+    {ok, lists:reverse(Accum)};
+get_external_avms(["-e", AVMPath|Rest], Accum) ->
+    case filelib:is_file(AVMPath) of
+        true ->
+            get_external_avms(Rest, [AVMPath|Accum]);
+        _ ->
+            {error, io_lib:format("File does not exist: ~p", [AVMPath])}
+    end;
+get_external_avms(["--external", AVMPath|Rest], Accum) ->
+    case filelib:is_file(AVMPath) of
+        true ->
+            get_external_avms(Rest, [AVMPath|Accum]);
+        _ ->
+            {error, io_lib:format("File does not exist: ~s", [AVMPath])}
+    end;
+get_external_avms([_|Rest], Accum) ->
+    get_external_avms(Rest, Accum).
+
 -record(file_set, {
     name, out_dir, beam_files, priv_files
 }).
 
 %% @private
-do_packbeam(ProjectApps, Deps) ->
+do_packbeam(ProjectApps, Deps, ExternalAVMs) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
     try
         DepsAvms = [maybe_create_packbeam(DepFileSet, []) || DepFileSet <- DepFileSets],
-        [maybe_create_packbeam(ProjectAppFileSet, DepsAvms) || ProjectAppFileSet <- ProjectAppFileSets]
+        [maybe_create_packbeam(ProjectAppFileSet, DepsAvms ++ ExternalAVMs) ||
+            ProjectAppFileSet <- ProjectAppFileSets]
     catch
         _:E ->
              rebar_api:error("Packbeam creation failed: ~p", [E])
