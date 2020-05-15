@@ -36,7 +36,7 @@ Create a file called main.erl in the `src` directory with the contents:
 
 ### `packbeam` target
 
-The `packbeam` target is used to generated an AtomVM packbeam ( ) file.
+The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.
 
 Currently, the AtomVM `eavmlib.avm` and `estdlib.avm` modules are not avialable via `rebar3`.  However, if you have them built as part of the AtomVM project, you can direct the `packbeam` target to these AVM files via the `-e` (or `--external`) flag, e.g.,
 
@@ -83,6 +83,8 @@ An AtomVM AVM file can be found under `_build/default/lib`.
     erlang.beam [572]
 
 > Note.  The `packbeam` tool can be created by running `make escript` in the `_build/default/plugins/packbeam` directory.
+
+The `packbeam` target will use timestamps to determine whether a rebuild is necessary.  However, timestamps may not be enough to trigger a rebuild, for example, if a dependency was added or removed.  You can force a rebuild of AVM file by adding the `-f` flag (or `--force`), with no arguments.  All AVM files, including AVM files for dependencies, will be rebuilt regardless of timestamps.
 
 ### `esp32-flash` target
 

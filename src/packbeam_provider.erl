@@ -35,7 +35,8 @@
 -define(PROVIDER, packbeam).
 -define(DEPS, [compile]).
 -define(OPTS, [
-    {ext, $e, "external", undefined, "External AVM modules"}
+    {ext, $e, "external", undefined, "External AVM modules"},
+    {force, $f, "force", undefined, "Force rebuild"}
 ]).
 
 %%
@@ -58,12 +59,15 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
+    {Args, _} = rebar_state:command_parsed_args(State),
+    Force = proplists:get_value(force, Args, false),
     case get_external_avms(rebar_state:command_args(State)) of
         {ok, ExternalAVMs} ->
             do_packbeam(
                 rebar_state:project_apps(State),
                 lists:usort(rebar_state:all_deps(State)),
-                ExternalAVMs
+                ExternalAVMs,
+                Force
             ),
             {ok, State};
         {error, Reason} ->
@@ -79,9 +83,11 @@ format_error(Reason) ->
 %% internal functions
 %%
 
+%% @private
 get_external_avms(Args) ->
     get_external_avms(Args, []).
 
+%% @private
 get_external_avms([], Accum) ->
     {ok, lists:reverse(Accum)};
 get_external_avms(["-e", AVMPath|Rest], Accum) ->
@@ -106,12 +112,12 @@ get_external_avms([_|Rest], Accum) ->
 }).
 
 %% @private
-do_packbeam(ProjectApps, Deps, ExternalAVMs) ->
+do_packbeam(ProjectApps, Deps, ExternalAVMs, Force) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
     try
-        DepsAvms = [maybe_create_packbeam(DepFileSet, []) || DepFileSet <- DepFileSets],
-        [maybe_create_packbeam(ProjectAppFileSet, DepsAvms ++ ExternalAVMs) ||
+        DepsAvms = [maybe_create_packbeam(DepFileSet, [], Force) || DepFileSet <- DepFileSets],
+        [maybe_create_packbeam(ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Force) ||
             ProjectAppFileSet <- ProjectAppFileSets]
     catch
         _:E ->
@@ -147,7 +153,7 @@ get_all_files(PrivDir) ->
     ).
 
 %% @private
-maybe_create_packbeam(FileSet, AvmFiles) ->
+maybe_create_packbeam(FileSet, AvmFiles, Force) ->
     #file_set{
         name=Name,
         out_dir=OutDir,
@@ -156,7 +162,7 @@ maybe_create_packbeam(FileSet, AvmFiles) ->
     } = FileSet,
     DirName = filename:dirname(OutDir),
     TargetAVM = filename:join(DirName, Name ++ ".avm"),
-    case needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles) of
+    case Force orelse needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles) of
         true ->
             create_packbeam(FileSet, AvmFiles);
         _ ->
