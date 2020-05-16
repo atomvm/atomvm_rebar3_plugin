@@ -36,11 +36,27 @@ Create a file called main.erl in the `src` directory with the contents:
 
 ### `packbeam` target
 
-The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.
+The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.  E.g.,
 
-Currently, the AtomVM `eavmlib.avm` and `estdlib.avm` modules are not avialable via `rebar3`.  However, if you have them built as part of the AtomVM project, you can direct the `packbeam` target to these AVM files via the `-e` (or `--external`) flag, e.g.,
+    shell$ rebar3 packbeam
+    ===> Compiling packbeam
+    ===> Compiling atomvm_rebar3_plugin
+    ===> Compiling packbeam
+    ===> Compiling atomvm_rebar3_plugin
+    ===> Verifying dependencies...
+    ===> Compiling mylib
+    ===> AVM file written to : mylib.avm
 
-    shell$ rebar3 packbeam -e <path-to>/AtomVM/build/libs/eavmlib/src/eavmlib.avm -e <path-to>/AtomVM/build/libs/estdlib/src/estdlib.avm
+When using this target, an AVM file with the project name will be created in `_build/<profile>/lib/`, .e.g.,
+
+    shell$ ls -l _build/default/lib/mylib.avm
+    -rw-rw-r--  1 frege  wheel  8780 May 15 1895 22:03 _build/default/lib/mylib.avm
+
+If your project has any erlang dependencies, the `packbeam` target will include any BEAM files or priv files from the dependent projects in the final AVM file.
+
+Currently, the AtomVM `eavmlib.avm` and `estdlib.avm` modules are not available via `rebar3`.  However, if you have them built as part of the AtomVM project, you can direct the `packbeam` target to these AVM files via the `-e` (or `--external`) flag, e.g.,
+
+    shell$ rebar3 packbeam -e <path-to>/AtomVM/build/libs/eavmlib/src/eavmlib.avm -e <path-to>/AtomVM/build/libs/estdlib/src/estdlib.avm -f
     ===> Fetching packbeam (from {git,"https://github.com/fadushin/packbeam.git",
                         {branch,"master"}})
     ===> Compiling packbeam
@@ -83,6 +99,8 @@ An AtomVM AVM file can be found under `_build/default/lib`.
     erlang.beam [572]
 
 > Note.  The `packbeam` tool can be created by running `make escript` in the `_build/default/plugins/packbeam` directory.
+
+You may use the `-p` option (or `--prune`) to prune uncessary beam files when creating AVM files.  Pruning unecessary files can make your AVM files smaller, leading to faster development cycles and more free space on flash media.  Pruning is not enabled by default.  Note that if you use the prune option, your project (or at least one of its dependencies) _must_ have a `start/0` entrypoint.  Otherwise, you should treat your project as a library, suitable for inclusion in a different AtomVM project.
 
 The `packbeam` target will use timestamps to determine whether a rebuild is necessary.  However, timestamps may not be enough to trigger a rebuild, for example, if a dependency was added or removed.  You can force a rebuild of AVM file by adding the `-f` flag (or `--force`), with no arguments.  All AVM files, including AVM files for dependencies, will be rebuilt regardless of timestamps.
 

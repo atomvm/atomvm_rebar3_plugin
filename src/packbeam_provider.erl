@@ -36,7 +36,8 @@
 -define(DEPS, [compile]).
 -define(OPTS, [
     {ext, $e, "external", undefined, "External AVM modules"},
-    {force, $f, "force", undefined, "Force rebuild"}
+    {force, $f, "force", undefined, "Force rebuild"},
+    {prune, $p, "prune", undefined, "Prune unreferenced BEAM files"}
 ]).
 
 %%
@@ -59,15 +60,14 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    {Args, _} = rebar_state:command_parsed_args(State),
-    Force = proplists:get_value(force, Args, false),
-    case get_external_avms(rebar_state:command_args(State)) of
-        {ok, ExternalAVMs} ->
+    case parse_args(rebar_state:command_args(State)) of
+        {ok, Opts} ->
             do_packbeam(
                 rebar_state:project_apps(State),
                 lists:usort(rebar_state:all_deps(State)),
-                ExternalAVMs,
-                Force
+                maps:get(external_avms, Opts),
+                maps:get(prune, Opts),
+                maps:get(force, Opts)
             ),
             {ok, State};
         {error, Reason} ->
@@ -84,40 +84,48 @@ format_error(Reason) ->
 %%
 
 %% @private
-get_external_avms(Args) ->
-    get_external_avms(Args, []).
+parse_args(Args) ->
+    parse_args(Args, #{external_avms => [], prune => false, force => false}).
 
 %% @private
-get_external_avms([], Accum) ->
-    {ok, lists:reverse(Accum)};
-get_external_avms(["-e", AVMPath|Rest], Accum) ->
+parse_args([], Accum) ->
+    {ok, Accum};
+parse_args(["-e", AVMPath|Rest], Accum) ->
     case filelib:is_file(AVMPath) of
         true ->
-            get_external_avms(Rest, [AVMPath|Accum]);
+            parse_args(Rest, Accum#{external_avms => [AVMPath | maps:get(external_avms, Accum)]});
         _ ->
             {error, io_lib:format("File does not exist: ~p", [AVMPath])}
     end;
-get_external_avms(["--external", AVMPath|Rest], Accum) ->
+parse_args(["--external", AVMPath|Rest], Accum) ->
     case filelib:is_file(AVMPath) of
         true ->
-            get_external_avms(Rest, [AVMPath|Accum]);
+            parse_args(Rest, Accum#{external_avms => [AVMPath | maps:get(external_avms, Accum)]});
         _ ->
             {error, io_lib:format("File does not exist: ~s", [AVMPath])}
     end;
-get_external_avms([_|Rest], Accum) ->
-    get_external_avms(Rest, Accum).
+parse_args(["-p"|Rest], Accum) ->
+    parse_args(Rest, Accum#{prune => true});
+parse_args(["--prune"|Rest], Accum) ->
+    parse_args(Rest, Accum#{prune => true});
+parse_args(["-f"|Rest], Accum) ->
+    parse_args(Rest, Accum#{force => true});
+parse_args(["--force"|Rest], Accum) ->
+    parse_args(Rest, Accum#{force => true});
+parse_args([_|Rest], Accum) ->
+    parse_args(Rest, Accum).
 
 -record(file_set, {
     name, out_dir, beam_files, priv_files
 }).
 
 %% @private
-do_packbeam(ProjectApps, Deps, ExternalAVMs, Force) ->
+do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
     try
-        DepsAvms = [maybe_create_packbeam(DepFileSet, [], Force) || DepFileSet <- DepFileSets],
-        [maybe_create_packbeam(ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Force) ||
+        DepsAvms = [maybe_create_packbeam(DepFileSet, [], false, Force) || DepFileSet <- DepFileSets],
+        [maybe_create_packbeam(ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force) ||
             ProjectAppFileSet <- ProjectAppFileSets]
     catch
         _:E ->
@@ -153,7 +161,7 @@ get_all_files(PrivDir) ->
     ).
 
 %% @private
-maybe_create_packbeam(FileSet, AvmFiles, Force) ->
+maybe_create_packbeam(FileSet, AvmFiles, Prune, Force) ->
     #file_set{
         name=Name,
         out_dir=OutDir,
@@ -164,7 +172,7 @@ maybe_create_packbeam(FileSet, AvmFiles, Force) ->
     TargetAVM = filename:join(DirName, Name ++ ".avm"),
     case Force orelse needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles) of
         true ->
-            create_packbeam(FileSet, AvmFiles);
+            create_packbeam(FileSet, AvmFiles, Prune);
         _ ->
             TargetAVM
     end.
@@ -184,7 +192,7 @@ latest_modified_time(PathList) ->
     lists:max([modified_time(Path) || Path <- PathList]).
 
 %% @private
-create_packbeam(FileSet, AvmFiles) ->
+create_packbeam(FileSet, AvmFiles, Prune) ->
     #file_set{
         name=Name,
         out_dir=OutDir,
@@ -198,7 +206,7 @@ create_packbeam(FileSet, AvmFiles) ->
         DirName = filename:dirname(OutDir),
         ok = file:set_cwd(DirName),
         AvmFilename = Name ++ ".avm",
-        packbeam:create(AvmFilename, reorder_beamfiles(BeamFiles) ++ PrivFilesRelative ++ AvmFiles),
+        packbeam:create(AvmFilename, reorder_beamfiles(BeamFiles) ++ PrivFilesRelative ++ AvmFiles, Prune),
         rebar_api:info("AVM file written to : ~s", [AvmFilename]),
         filename:join(DirName, AvmFilename)
     after
