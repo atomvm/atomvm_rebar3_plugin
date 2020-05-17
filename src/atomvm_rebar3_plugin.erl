@@ -31,4 +31,5 @@
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State) ->
     {ok, State1} = packbeam_provider:init(State),
-    {ok, State1}.
+    {ok, State2} = esp32_flash_provider:init(State1),
+    {ok, State2}.

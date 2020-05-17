@@ -2,9 +2,12 @@
 
 A `rebar3` plugin for simplifying development of Erlang applications targeted for the <a href="http://github.com/bettio/AtomVM">AtomVM</a> Erlang abstract machine.
 
-This `rebar3` plugin provides targets for generation AtomVM packbeam files from your `rebar3` project and its dependencies and flashing them to ESP32 devices.
+This `rebar3` plugin provides the following targets:
 
-The `atomvm_rebar3_plugin` plugin makes use of the <a href="https://github.com/fadushin/packbeam">packbeam</a> tool.
+* `packbeam`  Generate AtomVM packbeam files from your `rebar3` project and its dependencies.
+* `esp32_flash`  Flash AtomVM packbeam files to ESP32 devices over a serial connection.
+
+The `atomvm_rebar3_plugin` plugin makes use of the <a href="https://github.com/fadushin/packbeam">packbeam</a> tool, internally.
 
 ## Getting Started
 
@@ -36,7 +39,19 @@ Create a file called main.erl in the `src` directory with the contents:
 
 ### `packbeam` target
 
-The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.  E.g.,
+The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.
+
+    shell$ rebar3 help packbeam
+    ===> Compiling packbeam
+    ===> Compiling atomvm_rebar3_plugin
+    A rebar plugin to create packbeam files
+    Usage: rebar3 packbeam [-e] [-f] [-p]
+
+    -e, --external  External AVM modules
+    -f, --force     Force rebuild
+    -p, --prune     Prune unreferenced BEAM files
+
+E.g.,
 
     shell$ rebar3 packbeam
     ===> Compiling packbeam
@@ -104,29 +119,63 @@ You may use the `-p` option (or `--prune`) to prune uncessary beam files when cr
 
 The `packbeam` target will use timestamps to determine whether a rebuild is necessary.  However, timestamps may not be enough to trigger a rebuild, for example, if a dependency was added or removed.  You can force a rebuild of AVM file by adding the `-f` flag (or `--force`), with no arguments.  All AVM files, including AVM files for dependencies, will be rebuilt regardless of timestamps.
 
+The `packbeam` target depends on the `compile` target, so any changes to modules in the project will automatically get rebuilt when running the `packbeam` target.
+
 ### `esp32-flash` target
 
-> TODO not yet implemented
+You may use the `esp32_flash` target to flash the generated AtomVM packbeam application to the flash storage on an ESP32 device connected over a serial connection.
 
-You may use the `esp32-flash` target to flash the generated AtomVM packbeam application to the flash storage on an ESP32 device connected over a serial connection.
+    shell$ rebar3 help esp32_flash
+    ===> Compiling packbeam
+    ===> Compiling atomvm_rebar3_plugin
+    A rebar plugin to flash packbeam to ESP32 devices
+    Usage: rebar3 esp32_flash [-e] [-p] [-b] [-o]
 
-    $ rebar3 esp32-flash
-    <Plugin Output>
+    -e, --esptool  Path to esptool.py
+    -p, --port     Device port (default /dev/ttyUSB0)
+    -b, --baud     Baud rate (default 115200)
+    -o, --offset   Offset (default 0x110000)
 
-By default, the `esp32-flash` target will write to port `/dev/ttyUSB0` at a baud rate of `115200`.
+The `esp32_flash` will use the `esptool.py` command to flash the ESP32 device.  This tool is available via the <a href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/">IDF SDK</a>, or directly via <a href="https://github.com/espressif/esptool">github</a>.  The `esptool.py` command is also avalable via many package managers (e.g., MacOS Homebrew).
 
-You may control the port and baud settings for connecting to your ESP device via the `-port` and `-baud` options to the `esp32-flash` target, e.g.,
+By default, the `esp32_flash` target will assume the `esptool.py` command is available on the user's executable path.  Alternatively, you may specify the full path to the `esptool.py` command via the `-e` (or `--esptool`) option
 
-    $ rebar3 esp32-flash -port /dev/tty.SLAB_USBtoUART -baud 921600
-    <Plugin Output>
+By default, the `esp32_flash` target will write to port `/dev/ttyUSB0` at a baud rate of `115200`.  You may control the port and baud settings for connecting to your ESP device via the `-port` and `-baud` options to the `esp32_flash` target, e.g.,
 
-Alternatively, the following environment variables may be used to control the same settings:
+    shell$ rebar3 esp32_flash --port /dev/tty.SLAB_USBtoUART --baud 921600
+    ===> Compiling packbeam
+    ===> Compiling atomvm_rebar3_plugin
+    ===> Compiling packbeam
+    ===> Compiling atomvm_rebar3_plugin
+    ===> Verifying dependencies...
+    ===> Compiling mylib
+    ===> esptool.py --chip esp32 --port /dev/tty.SLAB_USBtoUART --baud 921600 --before default_reset --after hard_reset write_flash -u --flash_mode dio --flash_freq 40m --flash_size detect 0x110000 /home/frege/mylib/_build/default/lib/mylib.avm
+    esptool.py v2.1
+    Connecting........_
+    Chip is ESP32D0WDQ6 (revision 1)
+    Uploading stub...
+    Running stub...
+    Stub running...
+    Changing baud rate to 921600
+    Changed.
+    Configuring flash size...
+    Auto-detected Flash size: 4MB
+    Wrote 16384 bytes at 0x00110000 in 0.2 seconds (615.0 kbit/s)...
+    Hash of data verified.
 
+    Leaving...
+    Hard resetting...
+
+Alternatively, the following environment variables may be used to control the above settings:
+
+* ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_ESPTOOL
 * ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_PORT
 * ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_BAUD
+* ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_OFFSET
 
 Any setting specified on the command line take precendence over environment variable settings, which in turn take precedence over the default values specified above.
 
+The `esp32_flash` target depends on the `packbeam` target, so any changes to modules in the project will get rebuilt before being flashed to the device.
 
 ## AtomVM projects
 
