@@ -24,10 +24,10 @@ Create a `rebar3` project (app or lib), e.g.,
 Add the plugin to the rebar config:
 
     {plugins, [
-        {atomvm_rebar3_plugin, {git, "https://github.com/fadushin/atomvm_rebar3_plugin.git", {branch, "master"}}}
+        {atomvm_rebar3_plugin, {git, "https://github.com/fadushin/atomvm_rebar3_plugin.git", {tag, "0.1.0"}}}
     ]}.
 
-> TODO define a suitable tag
+> Note.  Check the latest tage in the `atomvm_rebar3_plugin` repository to get the latest version.
 
 Create a file called main.erl in the `src` directory with the contents:
 
@@ -176,17 +176,3 @@ Alternatively, the following environment variables may be used to control the ab
 Any setting specified on the command line take precendence over environment variable settings, which in turn take precedence over the default values specified above.
 
 The `esp32_flash` target depends on the `packbeam` target, so any changes to modules in the project will get rebuilt before being flashed to the device.
-
-## AtomVM projects
-
-> TODO not net implemented
-
-You can create an AtomVM project using one of two templates.
-
-The `atomvm-app` will create a skeleton project you can use as a starting point for an AtomVM project.
-
-    shell$ rebar3 new atomvm-app name=myapp
-
-Alternatively, the `atomvm-lib` template can be used to create an AtomVM library, suitable for inclusion in different AtomVM applications.
-
-    shell$ rebar3 new atomvm-lib name=mylib
