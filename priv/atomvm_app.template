@@ -1,0 +1,10 @@
+{description, "A minimal AtomVM application"}.
+{variables, [
+    {name, "atomvm_app", "Name of the AtomVM application"}
+]}.
+{dir, "{{name}}/src"}.
+{file, "LICENSE", "{{name}}/LICENSE"}.
+{file, "rebar.config", "{{name}}/rebar.config"}.
+{template, "atomvm_app.erl", "{{name}}/src/{{name}}.erl"}.
+{template, "atomvm_app.app.src", "{{name}}/src/{{name}}.app.src"}.
+{template, "README.md", "{{name}}/README.md"}.

@@ -176,3 +176,44 @@ Alternatively, the following environment variables may be used to control the ab
 Any setting specified on the command line take precendence over environment variable settings, which in turn take precedence over the default values specified above.
 
 The `esp32_flash` target depends on the `packbeam` target, so any changes to modules in the project will get rebuilt before being flashed to the device.
+
+# AtomVM App Template
+
+The `atomvm_rebar3_plugin` contains template definitions for generating skeletal `rebar3` projects.
+
+The best way to make use of this template is to include the `atomvm_rebar3_plugin` in your `~/.config/rebar3/rebar.config` file, e.g.,
+
+    %% TODO set a tag
+    {plugins, [
+        {atomvm_rebar3_plugin, {git, "https://github.com/fadushin/atomvm_rebar3_plugin.git", {branch, "master"}}}
+    ]}.
+
+You can then generate a minimal AtomVM application as follows:
+
+    shell$ rebar3 new atomvm_app myapp
+    ===> Writing myapp/LICENSE
+    ===> Writing myapp/rebar.config
+    ===> Writing myapp/src/myapp.erl
+    ===> Writing myapp/src/myapp.app.src
+    ===> Writing myapp/README.md
+
+This target will create a simple `rebar3` project with a minimal AtomVM application in the `myapp` directory.
+
+Change to the `myapp` directory and issue the `packbeam` target to the `rebar3` command:
+
+    shell$ cd myapp
+    shell$ rebar3 packbeam
+    ===> Fetching atomvm_rebar3_plugin (from {git,"https://github.com/fadushin/atomvm_rebar3_plugin.git",
+                                    {branch,"master"}})
+    ===> Fetching packbeam (from {git,"https://github.com/fadushin/atomvm_packbeam.git",
+                        {tag,"0.1.0"}})
+    ===> Compiling packbeam
+    ===> Compiling atomvm_rebar3_plugin
+    ===> Verifying dependencies...
+    ===> Compiling myapp
+    ===> AVM file written to : myapp.avm
+
+An AtomVM AVM file is created in the `_build/default/lib` directory:
+
+    shell$ ls -l _build/default/lib/myapp.avm
+    -rw-rw-r--  1 frege  wheel  328 Jan 1 1970 00:01 _build/default/lib/myapp.avm
