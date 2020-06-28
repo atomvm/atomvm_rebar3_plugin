@@ -28,7 +28,7 @@
     {esptool, $e, "esptool", undefined, "Path to esptool.py"},
     {port, $p, "port", undefined, "Device port (default /dev/ttyUSB0)"},
     {baud, $b, "baud", undefined, "Baud rate (default 115200)"},
-    {offset, $o, "offset", undefined, "Offset (default 0x110000)"}
+    {offset, $o, "offset", undefined, "Offset (default 0x210000)"}
 ]).
 
 %%
@@ -64,7 +64,7 @@ do(State) ->
                 ),
                 maps:get(port, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_PORT", "/dev/ttyUSB0")),
                 maps:get(baud, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_BAUD", "115200")),
-                maps:get(offset, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_OFFSET", "0x110000"))
+                maps:get(offset, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_OFFSET", "0x210000"))
             ),
             {ok, State};
         {error, Reason} ->
