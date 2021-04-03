@@ -18,12 +18,13 @@
     atomvm_rebar3_plugin,
     [
         {description, "A rebar plugin for manipulating AtomVM AVM files"},
-        {vsn, "0.1.0"},
+        {vsn, "0.2.0"},
         {registered, []},
         {applications, [kernel, stdlib]},
         {env,[]},
         {modules, []},
         {licenses, ["Apache 2.0"]},
-        {links, []}
+        {pkg_name, "atomvm_rebar3_plugin"},
+        {links, [{"github", "https://github.com/fadushin/atomvm_rebar3_plugin"}]}
     ]
 }.

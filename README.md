@@ -110,7 +110,7 @@ You may use the `esp32_flash` target to flash the generated AtomVM packbeam appl
     -e, --esptool  Path to esptool.py
     -p, --port     Device port (default /dev/ttyUSB0)
     -b, --baud     Baud rate (default 115200)
-    -o, --offset   Offset (default 0x110000)
+    -o, --offset   Offset (default 0x210000)
 
 The `esp32_flash` will use the `esptool.py` command to flash the ESP32 device.  This tool is available via the <a href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/">IDF SDK</a>, or directly via <a href="https://github.com/espressif/esptool">github</a>.  The `esptool.py` command is also avalable via many package managers (e.g., MacOS Homebrew).
 

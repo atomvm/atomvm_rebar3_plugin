@@ -110,6 +110,8 @@ parse_args(["-f"|Rest], Accum) ->
     parse_args(Rest, Accum#{force => true});
 parse_args(["--force"|Rest], Accum) ->
     parse_args(Rest, Accum#{force => true});
+parse_args(["-s", StartModule|Rest], Accum) ->
+    parse_args(Rest, Accum#{start => StartModule});
 parse_args(["--start", StartModule|Rest], Accum) ->
     parse_args(Rest, Accum#{start => StartModule});
 parse_args([_|Rest], Accum) ->
