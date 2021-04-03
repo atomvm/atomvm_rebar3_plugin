@@ -14,8 +14,6 @@ erl_crash.dump
 logs
 _build
 .idea
-.vscode
 *.iml
 rebar3.crashdump
 *~
-rebar.lock

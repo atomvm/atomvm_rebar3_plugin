@@ -27,7 +27,8 @@
 -define(OPTS, [
     {ext, $e, "external", undefined, "External AVM modules"},
     {force, $f, "force", undefined, "Force rebuild"},
-    {prune, $p, "prune", undefined, "Prune unreferenced BEAM files"}
+    {prune, $p, "prune", undefined, "Prune unreferenced BEAM files"},
+    {start, $s, "start", atom, "Start module"}
 ]).
 
 %%
@@ -57,12 +58,19 @@ do(State) ->
                 lists:usort(rebar_state:all_deps(State)),
                 maps:get(external_avms, Opts),
                 maps:get(prune, Opts),
-                maps:get(force, Opts)
+                maps:get(force, Opts),
+                get_start_module(Opts)
             ),
             {ok, State};
         {error, Reason} ->
             io:format("~p~n", [Reason]),
             {error, Reason}
+    end.
+
+get_start_module(Opts) ->
+    case maps:get(start, Opts) of
+        undefined -> undefined;
+        StartModule -> list_to_atom(StartModule)
     end.
 
 -spec format_error(any()) ->  iolist().
@@ -75,7 +83,7 @@ format_error(Reason) ->
 
 %% @private
 parse_args(Args) ->
-    parse_args(Args, #{external_avms => [], prune => false, force => false}).
+    parse_args(Args, #{external_avms => [], prune => false, force => false, start => undefined}).
 
 %% @private
 parse_args([], Accum) ->
@@ -102,6 +110,8 @@ parse_args(["-f"|Rest], Accum) ->
     parse_args(Rest, Accum#{force => true});
 parse_args(["--force"|Rest], Accum) ->
     parse_args(Rest, Accum#{force => true});
+parse_args(["--start", StartModule|Rest], Accum) ->
+    parse_args(Rest, Accum#{start => StartModule});
 parse_args([_|Rest], Accum) ->
     parse_args(Rest, Accum).
 
@@ -110,12 +120,12 @@ parse_args([_|Rest], Accum) ->
 }).
 
 %% @private
-do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force) ->
+do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
     try
-        DepsAvms = [maybe_create_packbeam(DepFileSet, [], false, Force) || DepFileSet <- DepFileSets],
-        [maybe_create_packbeam(ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force) ||
+        DepsAvms = [maybe_create_packbeam(DepFileSet, [], false, Force, undefined) || DepFileSet <- DepFileSets],
+        [maybe_create_packbeam(ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule) ||
             ProjectAppFileSet <- ProjectAppFileSets]
     catch
         _:E ->
@@ -151,7 +161,7 @@ get_all_files(PrivDir) ->
     ).
 
 %% @private
-maybe_create_packbeam(FileSet, AvmFiles, Prune, Force) ->
+maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule) ->
     #file_set{
         name=Name,
         out_dir=OutDir,
@@ -162,7 +172,7 @@ maybe_create_packbeam(FileSet, AvmFiles, Prune, Force) ->
     TargetAVM = filename:join(DirName, Name ++ ".avm"),
     case Force orelse needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles) of
         true ->
-            create_packbeam(FileSet, AvmFiles, Prune);
+            create_packbeam(FileSet, AvmFiles, Prune, StartModule);
         _ ->
             TargetAVM
     end.
@@ -182,7 +192,7 @@ latest_modified_time(PathList) ->
     lists:max([modified_time(Path) || Path <- PathList]).
 
 %% @private
-create_packbeam(FileSet, AvmFiles, Prune) ->
+create_packbeam(FileSet, AvmFiles, Prune, StartModule) ->
     #file_set{
         name=Name,
         out_dir=OutDir,
@@ -196,7 +206,7 @@ create_packbeam(FileSet, AvmFiles, Prune) ->
         DirName = filename:dirname(OutDir),
         ok = file:set_cwd(DirName),
         AvmFilename = Name ++ ".avm",
-        packbeam:create(AvmFilename, reorder_beamfiles(BeamFiles) ++ PrivFilesRelative ++ AvmFiles, Prune),
+        packbeam:create(AvmFilename, reorder_beamfiles(BeamFiles) ++ PrivFilesRelative ++ AvmFiles, Prune, StartModule),
         rebar_api:info("AVM file written to : ~s", [AvmFilename]),
         filename:join(DirName, AvmFilename)
     after

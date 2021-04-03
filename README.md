@@ -24,10 +24,10 @@ Create a `rebar3` project (app or lib), e.g.,
 Add the plugin to the rebar config:
 
     {plugins, [
-        {atomvm_rebar3_plugin, {git, "https://github.com/fadushin/atomvm_rebar3_plugin.git", {tag, "0.1.0"}}}
+        {atomvm_rebar3_plugin, {git, "https://github.com/fadushin/atomvm_rebar3_plugin.git", {branch, "master"}}}
     ]}.
 
-> Note.  Check the latest tage in the `atomvm_rebar3_plugin` repository to get the latest version.
+> Note.  Check the latest tag in the [`atomvm_rebar3_plugin`](https://github.com/fadushin/atomvm_rebar3_plugin.git) repository to get the latest version.
 
 Create a file called main.erl in the `src` directory with the contents:
 
@@ -41,15 +41,16 @@ Create a file called main.erl in the `src` directory with the contents:
 
 The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.
 
-    shell$ rebar3 help packbeam
+    shell$ ll
     ===> Compiling packbeam
     ===> Compiling atomvm_rebar3_plugin
     A rebar plugin to create packbeam files
-    Usage: rebar3 packbeam [-e] [-f] [-p]
+    Usage: rebar3 packbeam [-e] [-f] [-p] [-s <start>]
 
     -e, --external  External AVM modules
     -f, --force     Force rebuild
     -p, --prune     Prune unreferenced BEAM files
+    -s, --start     Start module
 
 E.g.,
 
@@ -69,9 +70,24 @@ When using this target, an AVM file with the project name will be created in `_b
 
 If your project has any erlang dependencies, the `packbeam` target will include any BEAM files or priv files from the dependent projects in the final AVM file.
 
-Currently, the AtomVM `eavmlib.avm` and `estdlib.avm` modules are not available via `rebar3`.  However, if you have them built as part of the AtomVM project, you can direct the `packbeam` target to these AVM files via the `-e` (or `--external`) flag, e.g.,
+If your project (or any of its dependencies) has multiple modules that export a `start/0` entry-point function, you can specify which module to use as the entry-point for your application via the `-s` (or `--start`) option:
 
-    shell$ rebar3 packbeam -e <path-to>/AtomVM/build/libs/eavmlib/src/eavmlib.avm -e <path-to>/AtomVM/build/libs/estdlib/src/estdlib.avm -f
+    shell$ rebar3 packbeam -s my_start_module
+    ...
+
+Using this option will ensure that the generated AVM file with use `my_start_module` to start the application.
+
+You may use the `-p` option (or `--prune`) to prune unnecessary beam files when creating AVM files.  Pruning unnecessary files can make your AVM files smaller, leading to faster development cycles and more free space on flash media.  Pruning is not enabled by default.  Note that if you use the prune option, your project (or at least one of its dependencies) _must_ have a `start/0` entry-point.  Otherwise, you should treat your project as a library, suitable for inclusion in a different AtomVM project.
+
+The `packbeam` target will use timestamps to determine whether a rebuild is necessary.  However, timestamps may not be enough to trigger a rebuild, for example, if a dependency was added or removed.  You can force a rebuild of AVM file by adding the `-f` flag (or `--force`), with no arguments.  All AVM files, including AVM files for dependencies, will be rebuilt regardless of timestamps.
+
+The `packbeam` target depends on the `compile` target, so any changes to modules in the project will automatically get rebuilt when running the `packbeam` target.
+
+#### External Dependencies
+
+If you already have AVM modules are not available via `rebar3`, you can direct the `packbeam` target to these AVM files via the `-e` (or `--external`) flag, e.g.,
+
+    shell$ rebar3 packbeam -e <path-to-avm-1> -e <path-to-avm-2> ...
     ===> Fetching packbeam (from {git,"https://github.com/fadushin/packbeam.git",
                         {branch,"master"}})
     ===> Compiling packbeam
@@ -80,46 +96,6 @@ Currently, the AtomVM `eavmlib.avm` and `estdlib.avm` modules are not available 
     ===> Verifying dependencies...
     ===> Compiling mylib
     ===> AVM file written to : mylib.avm
-
-An AtomVM AVM file can be found under `_build/default/lib`.
-
-    shell$ packbeam list -in _build/default/lib/mylib.avm
-    main.beam * [264]
-    mylib.beam [228]
-    atomvm.beam [412]
-    console.beam [840]
-    esp.beam [872]
-    gpio.beam [600]
-    i2c.beam [824]
-    http_server.beam [3852]
-    json_encoder.beam [996]
-    logger.beam [3708]
-    network_fsm.beam [4008]
-    spi.beam [580]
-    timer_manager.beam [1968]
-    timestamp_util.beam [692]
-    uart.beam [556]
-    calendar.beam [776]
-    gen_server.beam [2324]
-    gen_statem.beam [2036]
-    gen_udp.beam [1260]
-    gen_tcp.beam [1972]
-    inet.beam [600]
-    io_lib.beam [2112]
-    io.beam [448]
-    lists.beam [1704]
-    proplists.beam [360]
-    string.beam [436]
-    timer.beam [276]
-    erlang.beam [572]
-
-> Note.  The `packbeam` tool can be created by running `make escript` in the `_build/default/plugins/packbeam` directory.
-
-You may use the `-p` option (or `--prune`) to prune uncessary beam files when creating AVM files.  Pruning unecessary files can make your AVM files smaller, leading to faster development cycles and more free space on flash media.  Pruning is not enabled by default.  Note that if you use the prune option, your project (or at least one of its dependencies) _must_ have a `start/0` entrypoint.  Otherwise, you should treat your project as a library, suitable for inclusion in a different AtomVM project.
-
-The `packbeam` target will use timestamps to determine whether a rebuild is necessary.  However, timestamps may not be enough to trigger a rebuild, for example, if a dependency was added or removed.  You can force a rebuild of AVM file by adding the `-f` flag (or `--force`), with no arguments.  All AVM files, including AVM files for dependencies, will be rebuilt regardless of timestamps.
-
-The `packbeam` target depends on the `compile` target, so any changes to modules in the project will automatically get rebuilt when running the `packbeam` target.
 
 ### `esp32-flash` target
 
@@ -206,7 +182,7 @@ Change to the `myapp` directory and issue the `packbeam` target to the `rebar3` 
     ===> Fetching atomvm_rebar3_plugin (from {git,"https://github.com/fadushin/atomvm_rebar3_plugin.git",
                                     {branch,"master"}})
     ===> Fetching packbeam (from {git,"https://github.com/fadushin/atomvm_packbeam.git",
-                        {tag,"0.1.0"}})
+                        {branch,"master"}})
     ===> Compiling packbeam
     ===> Compiling atomvm_rebar3_plugin
     ===> Verifying dependencies...
