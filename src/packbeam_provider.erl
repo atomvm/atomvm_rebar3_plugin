@@ -130,8 +130,8 @@ do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule) ->
         [maybe_create_packbeam(ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule) ||
             ProjectAppFileSet <- ProjectAppFileSets]
     catch
-        _:E ->
-             rebar_api:error("Packbeam creation failed: ~p", [E])
+        _:E:S ->
+             rebar_api:error("Packbeam creation failed: ~p : ~p", [E, S])
     end.
 
 %% @private
@@ -153,14 +153,28 @@ get_beam_files(Dir) ->
     [filename:join(Dir, Mod) || Mod <- filelib:wildcard("*.beam", Dir)].
 
 %% @private
-get_all_files(PrivDir) ->
-    AllPaths = [filename:join(PrivDir, Mod) || Mod <- filelib:wildcard("*", PrivDir)],
-    lists:filter(
+get_all_files(Dir) ->
+    AllFiles = [filename:join(Dir, Mod) || Mod <- filelib:wildcard("*", Dir)],
+    RegularFiles = lists:filter(
         fun(Path) ->
-            filelib:is_file(Path)
+            filelib:is_regular(Path)
         end,
-        AllPaths
-    ).
+        AllFiles
+    ),
+    SubDirs = lists:filter(
+        fun(Path) ->
+            filelib:is_dir(Path)
+        end,
+        AllFiles
+    ),
+    SubFiles = lists:foldl(
+        fun(SubDir, Accum) ->
+            get_all_files(SubDir) ++ Accum
+        end,
+        [],
+        SubDirs
+    ),
+    RegularFiles ++ SubFiles.
 
 %% @private
 maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule) ->
