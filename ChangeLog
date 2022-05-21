@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added `erlfmt` plugin and formatted code.
+- Added `--chip` option to `esp32_flash` target
 
 ### Fixed
 - Fixed a bug that prevented files in directories inside of the `priv` directory to be included in packbeam files.

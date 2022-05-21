@@ -108,6 +108,7 @@ You may use the `esp32_flash` target to flash the generated AtomVM packbeam appl
     Usage: rebar3 esp32_flash [-e] [-p] [-b] [-o]
 
     -e, --esptool  Path to esptool.py
+    -c, --chip     ESP chip (default esp32)
     -p, --port     Device port (default /dev/ttyUSB0)
     -b, --baud     Baud rate (default 115200)
     -o, --offset   Offset (default 0x210000)
@@ -145,6 +146,7 @@ By default, the `esp32_flash` target will write to port `/dev/ttyUSB0` at a baud
 Alternatively, the following environment variables may be used to control the above settings:
 
 * ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_ESPTOOL
+* ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_CHIP
 * ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_PORT
 * ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_BAUD
 * ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_OFFSET

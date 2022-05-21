@@ -26,6 +26,7 @@
 -define(DEPS, [packbeam]).
 -define(OPTS, [
     {esptool, $e, "esptool", undefined, "Path to esptool.py"},
+    {chip, $c, "chip", undefined, "ESP chip (default esp32)"},
     {port, $p, "port", undefined, "Device port (default /dev/ttyUSB0)"},
     {baud, $b, "baud", undefined, "Baud rate (default 115200)"},
     {offset, $o, "offset", undefined, "Offset (default 0x210000)"}
@@ -69,6 +70,9 @@ do(State) ->
                     )
                 ),
                 maps:get(
+                    chip, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_CHIP", "esp32")
+                ),
+                maps:get(
                     port, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_PORT", "/dev/ttyUSB0")
                 ),
                 maps:get(baud, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_BAUD", "115200")),
@@ -101,6 +105,10 @@ parse_args(["-e", EspTool | Rest], Accum) ->
     parse_args(Rest, Accum#{esptool => EspTool});
 parse_args(["--esptool", EspTool | Rest], Accum) ->
     parse_args(Rest, Accum#{esptool => EspTool});
+parse_args(["-c", Chip | Rest], Accum) ->
+    parse_args(Rest, Accum#{chip => Chip});
+parse_args(["--chip", Chip | Rest], Accum) ->
+    parse_args(Rest, Accum#{chip => Chip});
 parse_args(["-p", Port | Rest], Accum) ->
     parse_args(Rest, Accum#{port => Port});
 parse_args(["--port", Port | Rest], Accum) ->
@@ -117,12 +125,12 @@ parse_args([_ | Rest], Accum) ->
     parse_args(Rest, Accum).
 
 %% @private
-do_flash(ProjectApps, EspTool, Port, Baud, Offset) ->
+do_flash(ProjectApps, EspTool, Chip, Port, Baud, Offset) ->
     [ProjectAppAVM | _] = [get_avm_file(ProjectApp) || ProjectApp <- ProjectApps],
     Cmd = lists:join(" ", [
         EspTool,
         "--chip",
-        "esp32",
+        Chip,
         "--port",
         Port,
         "--baud",
