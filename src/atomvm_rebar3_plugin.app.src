@@ -14,17 +14,14 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
-{application,
-    atomvm_rebar3_plugin,
-    [
-        {description, "A rebar plugin for manipulating AtomVM AVM files"},
-        {vsn, "0.3.0"},
-        {registered, []},
-        {applications, [kernel, stdlib]},
-        {env,[]},
-        {modules, []},
-        {licenses, ["Apache 2.0"]},
-        {pkg_name, "atomvm_rebar3_plugin"},
-        {links, [{"github", "https://github.com/fadushin/atomvm_rebar3_plugin"}]}
-    ]
-}.
+{application, atomvm_rebar3_plugin, [
+    {description, "A rebar plugin for manipulating AtomVM AVM files"},
+    {vsn, "0.3.0"},
+    {registered, []},
+    {applications, [kernel, stdlib]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache 2.0"]},
+    {pkg_name, "atomvm_rebar3_plugin"},
+    {links, [{"github", "https://github.com/fadushin/atomvm_rebar3_plugin"}]}
+]}.
