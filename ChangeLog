@@ -1,0 +1,31 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Added `erlfmt` plugin and formatted code.
+
+### Fixed
+- Fixed a bug that prevented files in directories inside of the `priv` directory to be included in packbeam files.
+
+## [0.3.0]
+
+### Changed
+- Updated dependency on `atomvm_packbeam` `0.3.0`
+
+## [0.2.0]
+
+### Added
+- Added plugin template for generating applications
+- Added support for deployment to hex
+- Added support for `--start` flag
+
+### Changed
+- Updated default flash location
+
+## [0.1.0]
+- Initial Release
