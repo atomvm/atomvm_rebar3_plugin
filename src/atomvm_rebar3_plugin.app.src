@@ -16,12 +16,12 @@
 %%
 {application, atomvm_rebar3_plugin, [
     {description, "A rebar plugin for manipulating AtomVM AVM files"},
-    {vsn, "0.4.0"},
+    {vsn, "0.4.1"},
     {registered, []},
     {applications, [kernel, stdlib]},
     {env, []},
     {modules, []},
     {licenses, ["Apache 2.0"]},
     {pkg_name, "atomvm_rebar3_plugin"},
-    {links, [{"github", "https://github.com/fadushin/atomvm_rebar3_plugin"}]}
+    {links, [{"github", "https://github.com/atomvm/atomvm_rebar3_plugin"}]}
 ]}.
