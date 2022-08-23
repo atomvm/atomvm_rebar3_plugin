@@ -26,7 +26,7 @@
 -define(DEPS, [packbeam]).
 -define(OPTS, [
     {esptool, $e, "esptool", undefined, "Path to esptool.py"},
-    {chip, $c, "chip", undefined, "ESP chip (default esp32)"},
+    {chip, $c, "chip", undefined, "ESP chip (default auto)"},
     {port, $p, "port", undefined, "Device port (default /dev/ttyUSB0)"},
     {baud, $b, "baud", undefined, "Baud rate (default 115200)"},
     {offset, $o, "offset", undefined, "Offset (default 0x210000)"}
@@ -70,7 +70,7 @@ do(State) ->
                     )
                 ),
                 maps:get(
-                    chip, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_CHIP", "esp32")
+                    chip, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_CHIP", "auto")
                 ),
                 maps:get(
                     port, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_PORT", "/dev/ttyUSB0")
@@ -142,9 +142,9 @@ do_flash(ProjectApps, EspTool, Chip, Port, Baud, Offset) ->
         "write_flash",
         "-u",
         "--flash_mode",
-        "dio",
+        "keep",
         "--flash_freq",
-        "40m",
+        "keep",
         "--flash_size",
         "detect",
         Offset,
