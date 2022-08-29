@@ -123,7 +123,7 @@ parse_args([_ | Rest], Accum) ->
     parse_args(Rest, Accum).
 
 -record(file_set, {
-    name, out_dir, beam_files, priv_files
+    name, out_dir, beam_files, priv_files, app_file
 }).
 
 %% @private
@@ -150,6 +150,7 @@ do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule) ->
 get_files(App) ->
     EBinDir = rebar_app_info:ebin_dir(App),
     BeamFiles = get_beam_files(EBinDir),
+    AppFile = get_app_file(EBinDir),
     OutDir = rebar_app_info:out_dir(App),
     PrivFiles = get_all_files(filename:join(OutDir, "priv")),
     Name = binary_to_list(rebar_app_info:name(App)),
@@ -157,12 +158,27 @@ get_files(App) ->
         name = Name,
         out_dir = OutDir,
         beam_files = BeamFiles,
+        app_file = AppFile,
         priv_files = PrivFiles
     }.
 
 %% @private
 get_beam_files(Dir) ->
     [filename:join(Dir, Mod) || Mod <- filelib:wildcard("*.beam", Dir)].
+
+%% @private
+get_app_file(Dir) ->
+    AppFiles = [filename:join(Dir, Mod) || Mod <- filelib:wildcard("*.app", Dir)],
+    case AppFiles of
+        [] ->
+            rebar_api:warn("No .app files in ~s", [Dir]),
+            undefined;
+        [AppFile] ->
+            AppFile;
+        [AppFile|_] ->
+            rebar_api:warn("Multiple .app files in ~s (using first): ~p", [Dir, AppFiles]),
+            AppFile
+    end.
 
 %% @private
 get_all_files(Dir) ->
@@ -194,11 +210,13 @@ maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule) ->
         name = Name,
         out_dir = OutDir,
         beam_files = BeamFiles,
+        app_file = AppFile,
         priv_files = PrivFiles
     } = FileSet,
     DirName = filename:dirname(OutDir),
     TargetAVM = filename:join(DirName, Name ++ ".avm"),
-    case Force orelse needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles) of
+    AppFiles = case AppFile of undefined -> []; _ -> [AppFile] end,
+    case Force orelse needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles ++ AppFiles) of
         true ->
             create_packbeam(FileSet, AvmFiles, Prune, StartModule);
         _ ->
@@ -225,18 +243,28 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule) ->
         name = Name,
         out_dir = OutDir,
         beam_files = BeamFiles,
+        app_file = AppFile,
         priv_files = PrivFiles
     } = FileSet,
     N = length(OutDir) + 1,
     PrivFilesRelative = [filename:join(Name, string:slice(PrivFile, N)) || PrivFile <- PrivFiles],
+    {ApplicationModule, AppFileBinFiles} = create_app_file_bin_files(Name, OutDir, AppFile),
+    BootFile = case StartModule of
+        init ->
+            [create_boot_file(OutDir, ApplicationModule)];
+        _ ->
+            []
+    end,
     Cwd = rebar_dir:get_cwd(),
     try
         DirName = filename:dirname(OutDir),
         ok = file:set_cwd(DirName),
         AvmFilename = Name ++ ".avm",
-        packbeam:create(
+        FileList = reorder_beamfiles(BeamFiles) ++ AppFileBinFiles ++ BootFile ++ PrivFilesRelative ++ AvmFiles,
+        packbeam_api:create(
             AvmFilename,
-            reorder_beamfiles(BeamFiles) ++ PrivFilesRelative ++ AvmFiles,
+            FileList,
+            ApplicationModule,
             Prune,
             StartModule
         ),
@@ -245,6 +273,35 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule) ->
     after
         ok = file:set_cwd(Cwd)
     end.
+
+create_app_file_bin_files(_AppName, _OutDir, undefined) ->
+    {undefined, []};
+create_app_file_bin_files(AppName, OutDir, AppFile) ->
+    case file:consult(AppFile) of
+        {ok, Term} ->
+            case Term of
+                [{application, ApplicationModule, _Properties} = ApplicationSpec] ->
+                    WritePath = filename:join([OutDir, "application.bin"]),
+                    Bin = erlang:term_to_binary(ApplicationSpec),
+                    ok = file:write_file(WritePath, Bin),
+                    {ApplicationModule, [{WritePath, filename:join([AppName, "priv", "application.bin"])}]};
+                _ ->
+                    rebar_api:warn("Consulted app file (~s) does not appear to be an app spec.", [AppFile]),
+                    {undefined, []}
+            end;
+        Error ->
+            rebar_api:warn("Failed to consult app file : ~s Error: ~p", [AppFile, Error]),
+            {undefined, []}
+    end.
+
+%% @private
+create_boot_file(OutDir, ApplicationModule) ->
+    Version = {0, 1, 0}, %% TODO
+    BootSpec = {boot, Version, #{applications => [ApplicationModule]}},
+    WritePath = filename:join([OutDir, "start.boot"]),
+    Bin = erlang:term_to_binary(BootSpec),
+    ok = file:write_file(WritePath, Bin),
+    {WritePath, filename:join(["init", "priv", "start.boot"])}.
 
 %% @private
 reorder_beamfiles(BeamFiles) ->
