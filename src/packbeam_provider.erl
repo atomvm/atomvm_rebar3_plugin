@@ -28,6 +28,7 @@
     {ext, $e, "external", undefined, "External AVM modules"},
     {force, $f, "force", undefined, "Force rebuild"},
     {prune, $p, "prune", undefined, "Prune unreferenced BEAM files"},
+    {include_lines, $i, "include_lines", undefined, "Include line information in generated AVM files"},
     {start, $s, "start", atom, "Start module"}
 ]).
 
@@ -64,7 +65,8 @@ do(State) ->
                 maps:get(external_avms, Opts),
                 maps:get(prune, Opts),
                 maps:get(force, Opts),
-                get_start_module(Opts)
+                get_start_module(Opts),
+                maps:get(include_lines, Opts)
             ),
             {ok, State};
         {error, Reason} ->
@@ -73,7 +75,7 @@ do(State) ->
     end.
 
 get_start_module(Opts) ->
-    case maps:get(start, Opts) of
+    case maps:get(start_module, Opts, undefined) of
         undefined -> undefined;
         StartModule -> list_to_atom(StartModule)
     end.
@@ -88,7 +90,14 @@ format_error(Reason) ->
 
 %% @private
 parse_args(Args) ->
-    parse_args(Args, #{external_avms => [], prune => false, force => false, start => undefined}).
+    Defaults = #{
+        external_avms => [],
+        prune => false,
+        force => false,
+        start_module => undefined,
+        include_lines => false
+    },
+    parse_args(Args, Defaults).
 
 %% @private
 parse_args([], Accum) ->
@@ -116,9 +125,13 @@ parse_args(["-f" | Rest], Accum) ->
 parse_args(["--force" | Rest], Accum) ->
     parse_args(Rest, Accum#{force => true});
 parse_args(["-s", StartModule | Rest], Accum) ->
-    parse_args(Rest, Accum#{start => StartModule});
+    parse_args(Rest, Accum#{start_module => StartModule});
 parse_args(["--start", StartModule | Rest], Accum) ->
-    parse_args(Rest, Accum#{start => StartModule});
+    parse_args(Rest, Accum#{start_module => StartModule});
+parse_args(["-i" | Rest], Accum) ->
+    parse_args(Rest, Accum#{include_lines => true});
+parse_args(["--include_lines" | Rest], Accum) ->
+    parse_args(Rest, Accum#{include_lines => true});
 parse_args([_ | Rest], Accum) ->
     parse_args(Rest, Accum).
 
@@ -127,17 +140,17 @@ parse_args([_ | Rest], Accum) ->
 }).
 
 %% @private
-do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule) ->
+do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IncludeLines) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
     try
         DepsAvms = [
-            maybe_create_packbeam(DepFileSet, [], false, Force, undefined)
+            maybe_create_packbeam(DepFileSet, [], false, Force, undefined, IncludeLines)
          || DepFileSet <- DepFileSets
         ],
         [
             maybe_create_packbeam(
-                ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule
+                ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule, IncludeLines
             )
          || ProjectAppFileSet <- ProjectAppFileSets
         ]
@@ -205,7 +218,7 @@ get_all_files(Dir) ->
     RegularFiles ++ SubFiles.
 
 %% @private
-maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule) ->
+maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IncludeLines) ->
     #file_set{
         name = Name,
         out_dir = OutDir,
@@ -218,7 +231,7 @@ maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule) ->
     AppFiles = case AppFile of undefined -> []; _ -> [AppFile] end,
     case Force orelse needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles ++ AppFiles) of
         true ->
-            create_packbeam(FileSet, AvmFiles, Prune, StartModule);
+            create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines);
         _ ->
             TargetAVM
     end.
@@ -238,7 +251,7 @@ latest_modified_time(PathList) ->
     lists:max([modified_time(Path) || Path <- PathList]).
 
 %% @private
-create_packbeam(FileSet, AvmFiles, Prune, StartModule) ->
+create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines) ->
     #file_set{
         name = Name,
         out_dir = OutDir,
@@ -264,9 +277,12 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule) ->
         packbeam_api:create(
             AvmFilename,
             FileList,
-            ApplicationModule,
-            Prune,
-            StartModule
+            #{
+                prune => Prune,
+                start_module => StartModule,
+                application_module => ApplicationModule,
+                include_lines => IncludeLines
+            }
         ),
         rebar_api:info("AVM file written to : ~s", [AvmFilename]),
         filename:join(DirName, AvmFilename)
