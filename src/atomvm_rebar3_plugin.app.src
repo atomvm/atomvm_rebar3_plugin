@@ -16,7 +16,7 @@
 %%
 {application, atomvm_rebar3_plugin, [
     {description, "A rebar plugin for manipulating AtomVM AVM files"},
-    {vsn, "0.5.1"},
+    {vsn, "0.6.0"},
     {registered, []},
     {applications, [kernel, stdlib]},
     {env, []},
