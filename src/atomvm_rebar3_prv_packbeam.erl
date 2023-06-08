@@ -14,7 +14,7 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
--module(packbeam_provider).
+-module(atomvm_rebar3_prv_packbeam).
 
 -behaviour(provider).
 
@@ -23,7 +23,8 @@
 -include_lib("kernel/include/file.hrl").
 
 -define(PROVIDER, packbeam).
--define(DEPS, [compile]).
+-define(NAMESPACE, atomvm).
+-define(DEPS, [{default, compile}]).
 -define(OPTS, [
     {ext, $e, "external", undefined, "External AVM modules"},
     {force, $f, "force", undefined, "Force rebuild"},
@@ -40,6 +41,8 @@ init(State) ->
     Provider = providers:create([
         % The 'user friendly' name of the task
         {name, ?PROVIDER},
+        % Provider namespace
+        {namespace, ?NAMESPACE},
         % The module implementation of the task
         {module, ?MODULE},
         % The task can be run by the user, always true
@@ -50,8 +53,8 @@ init(State) ->
         {example, "rebar3 packbeam"},
         % list of options understood by the plugin
         {opts, ?OPTS},
-        {short_desc, "A rebar plugin to create packbeam files"},
-        {desc, "A rebar plugin to create packbeam files"}
+        {short_desc, "Pack BEAM artifacts into a single AVM file"},
+        {desc, "Pack BEAM artifacts into a single AVM file"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 

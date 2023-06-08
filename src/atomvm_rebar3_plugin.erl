@@ -18,8 +18,12 @@
 
 -export([init/1]).
 
+-define(PROVIDERS, [
+    atomvm_rebar3_prv_packbeam,
+    atomvm_rebar3_prv_esp32_flash
+]).
+
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State) ->
-    {ok, State1} = packbeam_provider:init(State),
-    {ok, State2} = esp32_flash_provider:init(State1),
-    {ok, State2}.
+    FoldFun = fun(Cmd, {ok, StateAcc}) -> apply(Cmd, init, [StateAcc]) end,
+    lists:foldl(FoldFun, {ok, State}, ?PROVIDERS).

@@ -4,8 +4,8 @@ A `rebar3` plugin for simplifying development of Erlang applications targeted fo
 
 This `rebar3` plugin provides the following targets:
 
-* `packbeam`  Generate AtomVM packbeam files from your `rebar3` project and its dependencies.
-* `esp32_flash`  Flash AtomVM packbeam files to ESP32 devices over a serial connection.
+* `atomvm packbeam`  Generate AtomVM packbeam files from your `rebar3` project and its dependencies.
+* `atomvm esp32_flash`  Flash AtomVM packbeam files to ESP32 devices over a serial connection.
 
 The `atomvm_rebar3_plugin` plugin makes use of the <a href="https://github.com/fadushin/packbeam">packbeam</a> tool, internally.
 
@@ -41,7 +41,7 @@ Create a file called main.erl in the `src` directory with the contents:
 
 Use the `packbeam` target to create an AVM file:
 
-    shell$ rebar3 packbeam
+    shell$ rebar3 atomvm packbeam
     ===> Analyzing applications...
     ===> Compiling atomvm_rebar3_plugin
     ===> Compiling packbeam
@@ -64,10 +64,10 @@ You can use the [`packbeam`](https://github.com/atomvm/atomvm_packbeam) tool to 
 
 The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.
 
-    shell$ rebar3 help packbeam
+    shell$ rebar3 help atomvm packbeam
     ...
     A rebar plugin to create packbeam files
-    Usage: rebar3 packbeam [-e] [-f] [-p] [-s <start>]
+    Usage: rebar3 atomvm packbeam [-e] [-f] [-p] [-s <start>]
 
     -e, --external  External AVM modules
     -f, --force     Force rebuild
@@ -76,7 +76,7 @@ The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.
 
 E.g.,
 
-    shell$ rebar3 packbeam
+    shell$ rebar3 atomvm packbeam
     ===> Compiling packbeam
     ===> Compiling atomvm_rebar3_plugin
     ===> Compiling packbeam
@@ -94,7 +94,7 @@ If your project has any erlang dependencies, the `packbeam` target will include 
 
 If your project (or any of its dependencies) has multiple modules that export a `start/0` entry-point function, you can specify which module to use as the entry-point for your application via the `--start` (or `-s`) option:
 
-    shell$ rebar3 packbeam --start my_start_module
+    shell$ rebar3 atomvm packbeam --start my_start_module
     ...
 
 Using this option will ensure that the generated AVM file with use `my_start_module` to start the application.
@@ -146,7 +146,7 @@ And the application configuration file (e.g., `myapp.app.src`) should include th
 
 If you specify `init` as the start module, then an AVM file will be created:
 
-    shell$ rebar3 packbeam -p -s init
+    shell$ rebar3 atomvm packbeam -p -s init
     ===> Analyzing applications...
     ===> Compiling atomvm_rebar3_plugin
     ===> Compiling packbeam
@@ -174,7 +174,7 @@ Running this AVM file will boot the `myapp` application automatically, without h
 
 If you already have AVM modules are not available via `rebar3`, you can direct the `packbeam` target to these AVM files via the `-e` (or `--external`) flag, e.g.,
 
-    shell$ rebar3 packbeam -e <path-to-avm-1> -e <path-to-avm-2> ...
+    shell$ rebar3 atomvm packbeam -e <path-to-avm-1> -e <path-to-avm-2> ...
     ===> Fetching packbeam
     ===> Compiling packbeam
     ===> Compiling atomvm_rebar3_plugin
@@ -187,7 +187,7 @@ If you already have AVM modules are not available via `rebar3`, you can direct t
 
 You may use the `esp32_flash` target to flash the generated AtomVM packbeam application to the flash storage on an ESP32 device connected over a serial connection.
 
-    shell$ rebar3 help esp32_flash
+    shell$ rebar3 help atomvm esp32_flash
     ...
     A rebar plugin to flash packbeam to ESP32 devices
     Usage: rebar3 esp32_flash [-e] [-p] [-b] [-o]
@@ -204,7 +204,7 @@ By default, the `esp32_flash` target will assume the `esptool.py` command is ava
 
 By default, the `esp32_flash` target will write to port `/dev/ttyUSB0` at a baud rate of `115200`.  You may control the port and baud settings for connecting to your ESP device via the `-port` and `-baud` options to the `esp32_flash` target, e.g.,
 
-    shell$ rebar3 esp32_flash --port /dev/tty.SLAB_USBtoUART --baud 921600
+    shell$ rebar3 atomvm esp32_flash --port /dev/tty.SLAB_USBtoUART --baud 921600
     ===> Compiling packbeam
     ===> Compiling atomvm_rebar3_plugin
     ===> Compiling packbeam
@@ -265,7 +265,7 @@ This target will create a simple `rebar3` project with a minimal AtomVM applicat
 Change to the `myapp` directory and issue the `packbeam` target to the `rebar3` command:
 
     shell$ cd myapp
-    shell$ rebar3 packbeam
+    shell$ rebar3 atomvm packbeam
     ===> Fetching atomvm_rebar3_plugin
     ===> Fetching packbeam
     ===> Compiling packbeam

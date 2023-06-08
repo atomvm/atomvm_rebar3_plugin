@@ -14,7 +14,7 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
--module(esp32_flash_provider).
+-module(atomvm_rebar3_prv_esp32_flash).
 
 -behaviour(provider).
 
@@ -22,8 +22,9 @@
 
 -include_lib("kernel/include/file.hrl").
 
+-define(NAMESPACE, atomvm).
 -define(PROVIDER, esp32_flash).
--define(DEPS, [packbeam]).
+-define(DEPS, [{?NAMESPACE, packbeam}]).
 -define(OPTS, [
     {esptool, $e, "esptool", undefined, "Path to esptool.py"},
     {chip, $c, "chip", undefined, "ESP chip (default auto)"},
@@ -40,6 +41,8 @@ init(State) ->
     Provider = providers:create([
         % The 'user friendly' name of the task
         {name, ?PROVIDER},
+        % Provider namespace
+        {namespace, ?NAMESPACE},
         % The module implementation of the task
         {module, ?MODULE},
         % The task can be run by the user, always true
@@ -50,8 +53,8 @@ init(State) ->
         {example, "rebar3 esp32_flash"},
         % list of options understood by the plugin
         {opts, ?OPTS},
-        {short_desc, "A rebar plugin to flash packbeam to ESP32 devices"},
-        {desc, "A rebar plugin to flash packbeam to ESP32 devices"}
+        {short_desc, "Flash AVM files to ESP32 devices"},
+        {desc, "Flash AVM files to ESP32 devices"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
