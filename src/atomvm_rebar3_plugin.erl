@@ -22,4 +22,5 @@
 init(State) ->
     {ok, State1} = packbeam_provider:init(State),
     {ok, State2} = esp32_flash_provider:init(State1),
-    {ok, State2}.
+    {ok, State3} = stm32_flash_provider:init(State2),
+    {ok, State3}.
