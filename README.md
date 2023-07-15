@@ -67,12 +67,13 @@ The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.
     shell$ rebar3 help packbeam
     ...
     A rebar plugin to create packbeam files
-    Usage: rebar3 packbeam [-e] [-f] [-p] [-s <start>]
+    Usage: rebar3 packbeam [-e] [-f] [-p] [-i] [-s <start>]
 
-    -e, --external  External AVM modules
-    -f, --force     Force rebuild
-    -p, --prune     Prune unreferenced BEAM files
-    -s, --start     Start module
+    -e, --external  		External AVM modules
+    -f, --force     		Force rebuild
+    -p, --prune     		Prune unreferenced BEAM files
+    -i, --include_lines	Include line information in generated AVM files
+    -s, --start     		Start module
 
 E.g.,
 
@@ -239,6 +240,55 @@ Alternatively, the following environment variables may be used to control the ab
 Any setting specified on the command line take precedence over environment variable settings, which in turn take precedence over the default values specified above.
 
 The `esp32_flash` target depends on the `packbeam` target, so any changes to modules in the project will get rebuilt before being flashed to the device.
+
+## The `stm32-flash` target
+
+### Preparing an application for flashing
+The stm32 builds of AtomVM do not include a library partition and atomvmlib.avm is not flashed to the device. Instead the application should be compiled and packed along with atomvmlib.avm before flashing, for example:
+
+    shell$ rebar3 packbeam -p -e /path/to/atomvmlib.avm
+
+Consult `rebar3 help packbeam` for other options.
+
+### Flashing an application to a stm32 device
+You may use the `stm32_flash` target to flash the generated AtomVM packbeam application to the flash storage on an STM32 device connected to an st-link.
+
+    shell$ rebar3 help stm32_flash
+    A rebar plugin to flash packbeam to STM32 devices
+    Usage: rebar3 stm32_flash [-s] [-o]
+
+    -s, --stflash  Path to st-flash
+    -o, --offset   Offset (default 0x8080000)
+
+The `stm32_flash` will use the `st-flash` tool from the open source (bsd-3 liscensed) [stlink](https://github.com/stlink-org/stlink) suite of stm32 utilites to flash the STM32 device. This tool is available on [github](https://github.com/stlink-org/stlink), and in many package managers.
+
+By default, the `stm32_flash` target will assume the `st-flash` command is available on the user's executable path.  Alternatively, you may specify the full path to the `st-flash` command via the `-s` (or `--stflash`) option
+
+    shell$ rebar3 stm32_flash --stflash /usr/bin/st-flash --offset 0x8080000
+    ===> Verifying dependencies...
+    ===> Analyzing applications...
+    ===> Compiling stm32_hello
+    ===> st-flash --reset write /home/atomvm/AtomVM/stm32_hello/_build/default/lib/stm32_hello.avm 0x8080000
+
+    st-flash 1.7.0
+    2023-07-09T21:42:26 INFO common.c: F42x/F43x: 256 KiB SRAM, 2048 KiB flash in at least 16 KiB pages.
+    file /home/atomvm/AtomVM/stm32_hello/_build/default/lib/stm32_hello.avm md5 checksum: 5747b8eab41a3696097eb386c785e, stlink checksum: 0x00154e50
+    2023-07-09T21:42:26 INFO common.c: Attempting to write 29304 (0x7278) bytes to stm32 address: 134742016 (0x8080000)
+    EraseFlash - Sector:0x8 Size:0x20000 2023-07-09T21:42:28 INFO common.c: Flash page at addr: 0x08080000 erased
+    2023-07-09T21:42:28 INFO common.c: Finished erasing 1 pages of 131072 (0x20000) bytes
+    2023-07-09T21:42:28 INFO common.c: Starting Flash write for F2/F4/F7/L4
+    2023-07-09T21:42:28 INFO flash_loader.c: Successfully loaded flash loader in sram
+    2023-07-09T21:42:28 INFO flash_loader.c: Clear DFSR
+    2023-07-09T21:42:28 INFO common.c: enabling 32-bit flash writes
+    2023-07-09T21:42:29 INFO common.c: Starting verification of write complete
+    2023-07-09T21:42:29 INFO common.c: Flash written and verified! jolly good!
+
+Alternatively, the following environment variables may be used to control the above settings:
+
+* ATOMVM_REBAR3_PLUGIN_STM32_STFLASH
+* ATOMVM_REBAR3_PLUGIN_STM32_FLASH_OFFSET
+
+Any setting specified on the command line take precedence over environment variable settings, which in turn take precedence over the default values specified above.
 
 ## AtomVM App Template
 
