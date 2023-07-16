@@ -28,7 +28,8 @@
     {ext, $e, "external", undefined, "External AVM modules"},
     {force, $f, "force", undefined, "Force rebuild"},
     {prune, $p, "prune", undefined, "Prune unreferenced BEAM files"},
-    {include_lines, $i, "include_lines", undefined, "Include line information in generated AVM files"},
+    {include_lines, $i, "include_lines", undefined, "Include line information in generated AVM files (deprecated)"},
+    {remove_lines, $r, "remove_lines", undefined, "Remove line information from generated AVM files (off by default)"},
     {start, $s, "start", atom, "Start module"}
 ]).
 
@@ -95,7 +96,7 @@ parse_args(Args) ->
         prune => false,
         force => false,
         start_module => undefined,
-        include_lines => false
+        include_lines => true
     },
     parse_args(Args, Defaults).
 
@@ -129,9 +130,14 @@ parse_args(["-s", StartModule | Rest], Accum) ->
 parse_args(["--start", StartModule | Rest], Accum) ->
     parse_args(Rest, Accum#{start_module => StartModule});
 parse_args(["-i" | Rest], Accum) ->
-    parse_args(Rest, Accum#{include_lines => true});
+    parse_args(["--include_lines" | Rest], Accum);
 parse_args(["--include_lines" | Rest], Accum) ->
+    io:format("Note.  The -i flag is deprecated.  Lines are now included by default.  Use -r|--remove_lines to remove lines from generated files.~n"),
     parse_args(Rest, Accum#{include_lines => true});
+parse_args(["-r" | Rest], Accum) ->
+    parse_args(Rest, Accum#{include_lines => false});
+parse_args(["--remove_lines" | Rest], Accum) ->
+    parse_args(Rest, Accum#{include_lines => false});
 parse_args([_ | Rest], Accum) ->
     parse_args(Rest, Accum).
 
