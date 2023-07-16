@@ -67,14 +67,16 @@ The `packbeam` target is used to generated an AtomVM packbeam (`.avm`) file.
     shell$ rebar3 help packbeam
     ...
     A rebar plugin to create packbeam files
-    Usage: rebar3 packbeam [-e] [-f] [-p] [-i] [-s <start>]
+    Usage: rebar3 packbeam [-e] [-f] [-p] [-i] [-r] [-s <start>]
 
-    -e, --external  		External AVM modules
-    -f, --force     		Force rebuild
-    -p, --prune     		Prune unreferenced BEAM files
-    -i, --include_lines	Include line information in generated AVM files
-    -s, --start     		Start module
-
+    -e, --external       External AVM modules
+    -f, --force          Force rebuild
+    -p, --prune          Prune unreferenced BEAM files
+    -i, --include_lines  Include line information in generated AVM files
+                         (deprecated)
+    -r, --remove_lines   Remove line information from generated AVM files
+                         (off by default)
+    -s, --start          Start module
 E.g.,
 
     shell$ rebar3 packbeam
@@ -183,6 +185,12 @@ If you already have AVM modules are not available via `rebar3`, you can direct t
     ===> Verifying dependencies...
     ===> Compiling mylib
     ===> AVM file written to : mylib.avm
+
+### Line Number Information
+
+By default, running the packbeam target will generate line number information in packbeam files.  This information is used at runtime to generate stracktrace information about the file location of frames in a stacktrace.  This information can be essential for debugging, but for finalized projects, some users may want to strip line information from applications, in order to save on memory at runtime and space on flash.
+
+You can use the `-r` or `--remove_lines` flags to packbeam, to remove line information from packbeam files.
 
 ## The `esp32-flash` target
 
