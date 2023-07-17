@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1]
+
+### Added
+- Added `stm32_flash` rebar3 target
+- Added `-r|--remove_lines` command line option to packbeam target
+
+### Changed
+- Updated dependency on `atomvm_packbeam` 0.6 or later
+- Changed default to not remove lines from generated AVM files
+
 ## [0.6.0]
 
 ### Added
