@@ -1,0 +1,65 @@
+%%
+%% Copyright (c) dushin.net
+%% All rights reserved.
+%%
+%% Licensed under the Apache License, Version 2.0 (the "License");
+%% you may not use this file except in compliance with the License.
+%% You may obtain a copy of the License at
+%%
+%%     http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing, software
+%% distributed under the License is distributed on an "AS IS" BASIS,
+%% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%% See the License for the specific language governing permissions and
+%% limitations under the License.
+%%
+-module(legacy_esp32_flash_provider).
+
+-behaviour(provider).
+
+-export([init/1, do/1, format_error/1]).
+
+-include_lib("kernel/include/file.hrl").
+
+-define(PROVIDER, esp32_flash).
+-define(DEPS, [packbeam]).
+-define(OPTS, [
+    {esptool, $e, "esptool", undefined, "Path to esptool.py"},
+    {chip, $c, "chip", undefined, "ESP chip (default auto)"},
+    {port, $p, "port", undefined, "Device port (default /dev/ttyUSB0)"},
+    {baud, $b, "baud", undefined, "Baud rate (default 115200)"},
+    {offset, $o, "offset", undefined, "Offset (default 0x210000)"}
+]).
+
+%%
+%% provider implementation
+%%
+-spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
+init(State) ->
+    Provider = providers:create([
+        % The 'user friendly' name of the task
+        {name, ?PROVIDER},
+        % The module implementation of the task
+        {module, ?MODULE},
+        % The task can be run by the user, always true
+        {bare, true},
+        % The list of dependencies
+        {deps, ?DEPS},
+        % How to use the plugin
+        {example, "rebar3 esp32_flash"},
+        % list of options understood by the plugin
+        {opts, ?OPTS},
+        {short_desc, "A rebar plugin to flash packbeam to ESP32 devices (DEPRECATED)"},
+        {desc, "A rebar plugin to flash packbeam to ESP32 devices (DEPRECATED)"}
+    ]),
+    {ok, rebar_state:add_provider(State, Provider)}.
+
+-spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
+do(State) ->
+    rebar_api:warn("DEPRECATED The esp32_flash tool has been moved under the atomvm namespace", []),
+    atomvm_esp32_flash_provider:do(State).
+
+-spec format_error(any()) -> iolist().
+format_error(Reason) ->
+    atomvm_esp32_flash_provider:format_error(Reason).
