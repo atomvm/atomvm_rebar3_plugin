@@ -14,7 +14,7 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
--module(packbeam_provider).
+-module(atomvm_packbeam_provider).
 
 -behaviour(provider).
 
@@ -23,7 +23,7 @@
 -include_lib("kernel/include/file.hrl").
 
 -define(PROVIDER, packbeam).
--define(DEPS, [compile]).
+-define(DEPS, [{default, compile}]).
 -define(OPTS, [
     {ext, $e, "external", undefined, "External AVM modules"},
     {force, $f, "force", undefined, "Force rebuild"},
@@ -39,6 +39,8 @@
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State) ->
     Provider = providers:create([
+        % The atomvm namespace
+        {namespace, atomvm},
         % The 'user friendly' name of the task
         {name, ?PROVIDER},
         % The module implementation of the task
@@ -48,7 +50,7 @@ init(State) ->
         % The list of dependencies
         {deps, ?DEPS},
         % How to use the plugin
-        {example, "rebar3 packbeam"},
+        {example, "rebar3 atomvm packbeam"},
         % list of options understood by the plugin
         {opts, ?OPTS},
         {short_desc, "A rebar plugin to create packbeam files"},

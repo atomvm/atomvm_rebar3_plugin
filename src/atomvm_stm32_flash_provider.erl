@@ -17,7 +17,7 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
--module(stm32_flash_provider).
+-module(atomvm_stm32_flash_provider).
 
 -behaviour(provider).
 
@@ -38,6 +38,8 @@
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State) ->
     Provider = providers:create([
+        % The atomvm namespace
+        {namespace, atomvm},
         % The 'user friendly' name of the task
         {name, ?PROVIDER},
         % The module implementation of the task
@@ -47,7 +49,7 @@ init(State) ->
         % The list of dependencies
         {deps, ?DEPS},
         % How to use the plugin
-        {example, "rebar3 stm32_flash"},
+        {example, "rebar3 atomvm stm32_flash"},
         % list of options understood by the plugin
         {opts, ?OPTS},
         {short_desc, "A rebar plugin to flash packbeam to STM32 devices"},

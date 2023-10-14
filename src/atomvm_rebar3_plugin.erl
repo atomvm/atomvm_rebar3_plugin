@@ -18,9 +18,21 @@
 
 -export([init/1]).
 
+-define(PROVIDERS, [
+    atomvm_packbeam_provider,
+    atomvm_esp32_flash_provider,
+    atomvm_stm32_flash_provider,
+    legacy_packbeam_provider,
+    legacy_esp32_flash_provider,
+    legacy_stm32_flash_provider
+]).
+
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State) ->
-    {ok, State1} = packbeam_provider:init(State),
-    {ok, State2} = esp32_flash_provider:init(State1),
-    {ok, State3} = stm32_flash_provider:init(State2),
-    {ok, State3}.
+    lists:foldl(
+        fun(Cmd, {ok, StateAcc}) ->
+            apply(Cmd, init, [StateAcc])
+        end,
+        {ok, State},
+        ?PROVIDERS
+    ).
