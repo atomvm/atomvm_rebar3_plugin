@@ -54,26 +54,23 @@ init(State) ->
         {example, "rebar3 atomvm pico_flash"},
         % list of options understood by the plugin
         {opts, ?OPTS},
-        {short_desc, "A rebar plugin to convert packbeam to uf2 and copy to rp2040 devices"},
+        {short_desc, "Convert an AtomVM packbeam file to uf2 and copy to a an rp2040 device"},
         {desc,
-            "A rebar plugin to convert packbeam to uf2 and copy to rp2040 (Raspberry Pi Pico) devices"}
+            "~n"
+            "Use this plugin to convert an AtomVM packbeam file to a rp2040 a uf2 file and copy to an rp2040 devices.~n"
+        }
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
     try
-        Opts = get_opts(rebar_state:command_parsed_args(State)),
+        Opts = get_opts(State),
+        rebar_api:debug("Effective opts for ~p: ~p", [?PROVIDER, Opts]),
         ok = do_flash(
             rebar_state:project_apps(State),
-            maps:get(
-                path,
-                Opts,
-                os:getenv("ATOMVM_REBAR3_PLUGIN_PICO_MOUNT_PATH", get_default_mount())
-            ),
-            maps:get(
-                reset, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV", get_reset_dev())
-            )
+            maps:get(path, Opts),
+            maps:get(reset, Opts)
         ),
         {ok, State}
     catch
@@ -91,8 +88,27 @@ format_error(Reason) ->
 %%
 
 %% @private
-get_opts({ParsedArgs, _}) ->
-    atomvm_rebar3_plugin:proplist_to_map(ParsedArgs).
+get_opts(State) ->
+    {ParsedArgs, _} = rebar_state:command_parsed_args(State),
+    RebarOpts = atomvm_rebar3_plugin:get_atomvm_rebar_provider_config(State, ?PROVIDER),
+    ParsedOpts = atomvm_rebar3_plugin:proplist_to_map(ParsedArgs),
+    maps:merge(
+        env_opts(),
+        maps:merge(RebarOpts, ParsedOpts)
+    ).
+
+%% @private
+env_opts() ->
+    #{
+        path => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_PICO_MOUNT_PATH",
+            get_default_mount()
+        ),
+        reset => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV",
+            get_reset_dev()
+        )
+    }.
 
 %% @private
 get_stty_file_flag() ->

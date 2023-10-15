@@ -1,5 +1,5 @@
 %%
-%% Copyright (c) dushin.net
+%% Copyright (c) 2020-2023 Fred Dushin <fred@dushin.net>
 %% All rights reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@
 -export([init/1]).
 
 %% internal API
--export([proplist_to_map/1]).
+-export([proplist_to_map/1, get_atomvm_rebar_provider_config/2]).
 
 -define(PROVIDERS, [
     atomvm_packbeam_provider,
@@ -55,3 +55,12 @@ proplist_to_map([{K, V} | T], Accum) ->
     proplist_to_map(T, Accum#{K => V});
 proplist_to_map([K | T], Accum) ->
     proplist_to_map(T, Accum#{K => true}).
+
+-spec get_atomvm_rebar_provider_config(State :: term(), Provider :: atom()) -> map().
+get_atomvm_rebar_provider_config(State, Provider) ->
+    case rebar_state:get(State, ?MODULE) of
+        undefined ->
+            #{};
+        AtomVM ->
+            proplist_to_map(proplists:get_value(Provider, AtomVM, []))
+    end.

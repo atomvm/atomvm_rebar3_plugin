@@ -1,5 +1,5 @@
 %%
-%% Copyright (c) {{copyright_year}} {{author_email}}
+%% Copyright (c) {{copyright_year}} <{{author_email}}>
 %% All rights reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +14,16 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
--module({{name}}).
 
--export([start/0]).
-
-start() ->
-    ok.
+{application, {{name}}, [
+    {description, "An AtomVM application"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [
+        kernel, stdlib
+    ]},
+    {env,[]},
+    {modules, []},
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+ ]}.

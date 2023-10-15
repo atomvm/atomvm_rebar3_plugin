@@ -32,6 +32,11 @@
     {offset, $o, "offset", string, "Offset (default 0x8080000)"}
 ]).
 
+-define(DEFAULT_OPTS, #{
+    stflash => "st-flash",
+    offset => "0x8080000"
+}).
+
 %%
 %% provider implementation
 %%
@@ -52,29 +57,23 @@ init(State) ->
         {example, "rebar3 atomvm stm32_flash"},
         % list of options understood by the plugin
         {opts, ?OPTS},
-        {short_desc, "A rebar plugin to flash packbeam to STM32 devices"},
-        {desc, "A rebar plugin to flash packbeam to STM32 devices"}
+        {short_desc, "Flash an AtomVM packbeam file to an STM32 device"},
+        {desc,
+            "~n"
+            "Use this plugin to flash an AtomVM packbeam file to an STM32 device.~n"
+        }
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
     try
-        Opts = get_opts(rebar_state:command_parsed_args(State)),
+        Opts = get_opts(State),
+        rebar_api:debug("Effective opts for ~p: ~p", [?PROVIDER, Opts]),
         ok = do_flash(
             rebar_state:project_apps(State),
-            maps:get(
-                stflash,
-                Opts,
-                os:getenv(
-                    "ATOMVM_REBAR3_PLUGIN_STM32_STFLASH",
-                    "st-flash"
-                )
-            ),
-            maps:get(
-                offset, Opts,
-                os:getenv("ATOMVM_REBAR3_PLUGIN_STM32_FLASH_OFFSET", "0x8080000")
-            )
+            maps:get(stflash, Opts),
+            maps:get(offset, Opts)
         ),
         {ok, State}
     catch
@@ -92,8 +91,27 @@ format_error(Reason) ->
 %%
 
 %% @private
-get_opts({ParsedArgs, _}) ->
-    atomvm_rebar3_plugin:proplist_to_map(ParsedArgs).
+get_opts(State) ->
+    {ParsedArgs, _} = rebar_state:command_parsed_args(State),
+    RebarOpts = atomvm_rebar3_plugin:get_atomvm_rebar_provider_config(State, ?PROVIDER),
+    ParsedOpts = atomvm_rebar3_plugin:proplist_to_map(ParsedArgs),
+    maps:merge(
+        env_opts(),
+        maps:merge(RebarOpts, ParsedOpts)
+    ).
+
+%% @private
+env_opts() ->
+    #{
+        stflash => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_STM32_STFLASH",
+            maps:get(stflash, ?DEFAULT_OPTS)
+        ),
+        offset => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_STM32_FLASH_OFFSET",
+            maps:get(offset, ?DEFAULT_OPTS)
+        )
+    }.
 
 %% @private
 do_flash(ProjectApps, StFlash, Offset) ->

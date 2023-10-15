@@ -37,6 +37,10 @@
     {input, $i, "input", string, "Input avm file to convert to uf2"}
 ]).
 
+-define(DEFAULT_OPTS, #{
+    start => "0x10180000"
+}).
+
 %%
 %% provider implementation
 %%
@@ -57,20 +61,24 @@ init(State) ->
         {example, "rebar3 atomvm uf2create"},
         % list of options understood by the plugin
         {opts, ?OPTS},
-        {short_desc, "A rebar plugin to create uf2 files"},
-        {desc, "A rebar plugin to create uf2 files from packbeam files"}
+        {short_desc, "Create a Raspberry Pico uf2 file from an AtomVM packbeam file"},
+        {desc,
+            "~n"
+            "Use this plugin to create Raspberry Pico uf2 files from an AtomVM packbeam file.~n"
+        }
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
     try
-        Opts = get_opts(rebar_state:command_parsed_args(State)),
+        Opts = get_opts(State),
+        rebar_api:debug("Effective opts for ~p: ~p", [?PROVIDER, Opts]),
         OutFile = get_out_file(State),
         TargetAVM = get_avm_file(State),
         ok = do_uf2create(
             maps:get(output, Opts, OutFile),
-            parse_addr(maps:get(start, Opts, "0x10180000")),
+            parse_addr(maps:get(start, Opts)),
             maps:get(input, Opts, TargetAVM)
         ),
         {ok, State}
@@ -84,14 +92,28 @@ do(State) ->
 format_error(Reason) ->
     io_lib:format("~p", [Reason]).
 
-
 %%
 %% internal functions
 %%
 
 %% @private
-get_opts({ParsedArgs, _}) ->
-    atomvm_rebar3_plugin:proplist_to_map(ParsedArgs).
+get_opts(State) ->
+    {ParsedArgs, _} = rebar_state:command_parsed_args(State),
+    RebarOpts = atomvm_rebar3_plugin:get_atomvm_rebar_provider_config(State, ?PROVIDER),
+    ParsedOpts = atomvm_rebar3_plugin:proplist_to_map(ParsedArgs),
+    maps:merge(
+        env_opts(),
+        maps:merge(RebarOpts, ParsedOpts)
+    ).
+
+%% @private
+env_opts() ->
+    #{
+        reset => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_UF2CREATE_START",
+            maps:get(start, ?DEFAULT_OPTS)
+        )
+    }.
 
 %% @private
 get_avm_file(State) ->

@@ -1,4 +1,5 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -6,13 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.0] (Unreleased)
 
-Moved atomvm targets under the `atomvm` namespace
+- Moved atomvm tasks under the `atomvm` namespace (with support for deprecated tasks in the default namespace)
+- Added `utf2create` and `pico_flash` tasks, for Raspberry Pico support
+- Added support for setting options in `rebar.config`
 
 ## [0.6.1]
 
 ### Added
-- Added `stm32_flash` rebar3 target
-- Added `-r|--remove_lines` command line option to packbeam target
+
+- Added `stm32_flash` rebar3 task
+- Added `-r|--remove_lines` command line option to `packbeam` task
 
 ### Changed
 - Updated dependency on `atomvm_packbeam` 0.6 or later
@@ -45,7 +49,7 @@ Moved atomvm targets under the `atomvm` namespace
 
 ### Added
 - Added `erlfmt` plugin and formatted code.
-- Added `--chip` option to `esp32_flash` target
+- Added `--chip` option to `esp32_flash` task
 
 ### Fixed
 - Fixed a bug that prevented files in directories inside of the `priv` directory to be included in packbeam files.
