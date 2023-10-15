@@ -26,8 +26,8 @@
 -define(PROVIDER, stm32_flash).
 -define(DEPS, [packbeam]).
 -define(OPTS, [
-    {stflash, $s, "stflash", undefined, "Path to st-flash"},
-    {offset, $o, "offset", undefined, "Offset (default 0x8080000)"}
+    {stflash, $s, "stflash", string, "Path to st-flash"},
+    {offset, $o, "offset", string, "Offset (default 0x8080000)"}
 ]).
 
 %%
@@ -48,8 +48,12 @@ init(State) ->
         {example, "rebar3 stm32_flash"},
         % list of options understood by the plugin
         {opts, ?OPTS},
-        {short_desc, "A rebar plugin to flash packbeam to STM32 devices (DEPRECATED)"},
-        {desc, "A rebar plugin to flash packbeam to STM32 devices (DEPRECATED)"}
+        {short_desc, "A rebar plugin to flash packbeam files to STM32 devices (DEPRECATED)"},
+        {desc,
+            "A rebar plugin to flash packbeam files to STM32 devices.~n~n"
+            "IMPORTANT! this plugin has been DEPRECATED!~n"
+            "Use `rebar3 atomvm stm32_flash`, instead.~n"
+        }
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -61,4 +65,3 @@ do(State) ->
 -spec format_error(any()) -> iolist().
 format_error(Reason) ->
     atomvm_stm32_flash_provider:format_error(Reason).
-

@@ -18,6 +18,9 @@
 
 -export([init/1]).
 
+%% internal API
+-export([proplist_to_map/1]).
+
 -define(PROVIDERS, [
     atomvm_packbeam_provider,
     atomvm_esp32_flash_provider,
@@ -26,6 +29,8 @@
     legacy_esp32_flash_provider,
     legacy_stm32_flash_provider
 ]).
+
+-type proplist() :: [{term(), term()} | term()].
 
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State) ->
@@ -36,3 +41,15 @@ init(State) ->
         {ok, State},
         ?PROVIDERS
     ).
+
+-spec proplist_to_map(Proplist :: proplist()) -> map().
+proplist_to_map(Proplist) ->
+    proplist_to_map(Proplist, #{}).
+
+%% @private
+proplist_to_map([], Accum) ->
+    Accum;
+proplist_to_map([{K, V} | T], Accum) ->
+    proplist_to_map(T, Accum#{K => V});
+proplist_to_map([K | T], Accum) ->
+    proplist_to_map(T, Accum#{K => true}).
