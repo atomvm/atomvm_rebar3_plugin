@@ -206,6 +206,6 @@ do_flash(ProjectApps, PicoPath, ResetPort) ->
     Cmd = lists:join(" ", [
         "cp", "-v", TargetUF2, PicoPath
     ]),
-    rebar_api:info("~s~n", [Cmd]),
+    rebar_api:info("Copying ~s to ~s...~n", [TargetUF2, PicoPath]),
     io:format("~s", [os:cmd(Cmd)]),
     ok.
