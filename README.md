@@ -7,6 +7,8 @@ This `rebar3` plugin provides the following targets under the `atomvm` namespace
 * `packbeam`  Generate AtomVM packbeam files from your `rebar3` project and its dependencies.
 * `esp32_flash`  Flash AtomVM packbeam files to ESP32 devices over a serial connection.
 * `stm32_flash`  Flash AtomVM packbeam files to STM32 devices over a serial connection.
+* `uf2create`   Generate a u2f binary from an AtomVM packbeam file.
+* `pico_flash`  Flash "packed" uf2 files to RP2040 (RPi Pico) devices by copying to FATfs.
 
 > Note. The above targets were previously under the default namespace; however, the commands under the default namespace have been DEPRECATED.
 
@@ -300,6 +302,68 @@ Alternatively, the following environment variables may be used to control the ab
 * ATOMVM_REBAR3_PLUGIN_STM32_FLASH_OFFSET
 
 Any setting specified on the command line take precedence over environment variable settings, which in turn take precedence over the default values specified above.
+
+## The `pico_flash` target
+
+### Flashing an application to a pico (rp2040) device
+You may use the `pico_flash` target to copy the generated AtomVM packbeam application in uf2 format to the flash storage on an Pico device connected to usb. It is not necessary to push the `BOOTSEL` button while plugging in the Pico to usb, instead provide the path of the device to reset. On Linux this is typically `/dev/ttyACM0` (the same device used to monitor serial), on MacOS it is a cu.usbmodem device matching `/dev/cu.usbmodem14*` (not the /dev/tty.usbmodem14___ device used for serial monitoring).
+
+    shell$ rebar3 help atomvm pico_flash
+    A rebar plugin to convert packbeam to uf2 and copy to rp2040 (Raspberry Pi Pico) devices
+    Usage: rebar3 atomvm pico_flash [-p <path>] [-r <reset>]
+
+      -p, --path   Path to pico device (Defaults Linux:
+                   /run/media/${USER}/RPI-RP2, MacOS: /Volumes/RPI-RP2)
+      -r, --reset  Path to serial device to reset before flashing (Defaults
+                   Linux: /dev/ttyACM0, MacOS: /dev/cu.usbmodem14*)
+
+The `pico_flash` target depends on the `uf2create` target which in turn depends on `packbeam`, so in most cases it is not necessary to execute either of those targets if the default settings are used, as any changes to modules in the project will get rebuilt before being flashed to the device.
+
+    shell$ rebar3 atomvm pico_flash
+    ===> Fetching atomvm_rebar3_plugin v0.7.0
+    ===> Fetching rebar3_hex v7.0.6
+    ===> Fetching hex_core v0.8.4
+    ===> Fetching verl v1.1.1
+    ===> Analyzing applications...
+    ===> Compiling hex_core
+    ===> Compiling verl
+    ===> Compiling rebar3_hex
+    ===> Fetching atomvm_packbeam v0.6.0
+    ===> Fetching rebar3_proper v0.12.1
+    ===> Analyzing applications...
+    ===> Compiling rebar3_proper
+    ===> Analyzing applications...
+    ===> Compiling packbeam
+    ===> Compiling atomvm_rebar3_plugin
+    ===> Verifying dependencies...
+    ===> Analyzing applications...
+    ===> Compiling hello_world
+    ===> AVM file written to /home/joe/projects/hello_world/_build/default/lib/hello_world/hello_world.avm
+    ===> Resetting device at path /dev/ttyACM0
+    ===> Waiting for the device at path /run/media/${USER}/RPI-RP2 to settle and mount...
+    ===> Copying /home/joe/projects/hello/_build/default/lib/hello.uf2 to /run/media/${USER}/RPI-RP2...
+
+    '/home/joe/projects/hello_world/_build/default/lib/hello_world.uf2' -> '/run/media/joe/RPI-RP2/hello_world.uf2'
+
+If your pico uses a different device path or mount directory supply the full path needed for your device:
+
+    shell$ rebar3 atomvm pico_flash --path /mnt/pico --reset /dev/cu.usbmodem1411202
+
+> Warning: There is currently a known bug that occurs when the VM is compiled with the `-DAVM_WAIT_FOR_USB_CONNECT` cmake option. If you have previously connected to the tty serial port with `screen`, `minicom`, or similar and have disconnected or closed the session, the device will take unusually long to reset and fail to mount the FAT partition within 30 seconds and `pico_flash` will fail. This can be worked around by unplugging the pico from usb and plug it back in again, before repeating the flash procedure.
+
+## The `uf2create` target
+
+The `uf2create` target is used to generated an uf2 binary suitable for running on a Pico (RP2040) device from an AtomVM packbeam (`.avm`) file.
+
+    shell$ rebar3 help atomvm uf2create
+    A rebar plugin to create uf2 files from packbeam files
+    Usage: rebar3 atomvm uf2create [-o <output>] [-s <start>] [-i <input>]
+
+      -o, --output  Output path/name
+      -s, --start   Start address for the uf2 binary (default 0x10180000)
+      -i, --input   Input avm file to covert to uf2
+
+It should not be necessary to use this tool before using `pico_flash`, unless you have built a custom VM that requires changing the start address of the uf2 binary. If the application has not been compiled, or packed with packbeam, these steps will be run first using the default settings for `packbeam`.
 
 ## AtomVM App Template
 
