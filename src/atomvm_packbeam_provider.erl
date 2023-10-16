@@ -25,13 +25,24 @@
 -define(PROVIDER, packbeam).
 -define(DEPS, [{default, compile}]).
 -define(OPTS, [
-    {ext, $e, "external", undefined, "External AVM modules"},
-    {force, $f, "force", undefined, "Force rebuild"},
-    {prune, $p, "prune", undefined, "Prune unreferenced BEAM files"},
-    {include_lines, $i, "include_lines", undefined, "Include line information in generated AVM files (deprecated)"},
-    {remove_lines, $r, "remove_lines", undefined, "Remove line information from generated AVM files (off by default)"},
-    {start, $s, "start", atom, "Start module"}
+    {external, $e, "external", string, "External AVM modules"},
+    {force, $f, "force", boolean, "Force rebuild"},
+    {prune, $p, "prune", boolean, "Prune unreferenced BEAM files"},
+    {start, $s, "start", atom, "Start module"},
+    {remove_lines, $r, "remove_lines", boolean, "Remove line information from generated AVM files (off by default)"}
 ]).
+
+-define(DEFAULT_OPTIONS, #{
+    external_avms => [],
+    force => false,
+    prune => false,
+    start => undefined,
+    remove_lines => false
+}).
+
+-record(file_set, {
+    name, out_dir, beam_files, priv_files, app_file
+}).
 
 %%
 %% provider implementation
@@ -60,27 +71,28 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    case parse_args(rebar_state:command_args(State)) of
-        {ok, Opts} ->
-            do_packbeam(
-                rebar_state:project_apps(State),
-                lists:usort(rebar_state:all_deps(State)),
-                maps:get(external_avms, Opts),
-                maps:get(prune, Opts),
-                maps:get(force, Opts),
-                get_start_module(Opts),
-                maps:get(include_lines, Opts)
-            ),
-            {ok, State};
-        {error, Reason} ->
-            io:format("~p~n", [Reason]),
-            {error, Reason}
+    try
+        Opts = get_opts(rebar_state:command_parsed_args(State)),
+        ok = do_packbeam(
+            rebar_state:project_apps(State),
+            lists:usort(rebar_state:all_deps(State)),
+            maps:get(external_avms, Opts),
+            maps:get(prune, Opts),
+            maps:get(force, Opts),
+            get_start_module(Opts),
+            not maps:get(remove_lines, Opts)
+        ),
+        {ok, State}
+    catch
+        _:E ->
+            rebar_api:error("~p~n", [E]),
+            {error, E}
     end.
 
 get_start_module(Opts) ->
-    case maps:get(start_module, Opts, undefined) of
+    case maps:get(start, Opts, undefined) of
         undefined -> undefined;
-        StartModule -> list_to_atom(StartModule)
+        StartModule -> StartModule
     end.
 
 -spec format_error(any()) -> iolist().
@@ -92,80 +104,51 @@ format_error(Reason) ->
 %%
 
 %% @private
-parse_args(Args) ->
-    Defaults = #{
-        external_avms => [],
-        prune => false,
-        force => false,
-        start_module => undefined,
-        include_lines => true
-    },
-    parse_args(Args, Defaults).
+get_opts({ParsedArgs, _}) ->
+    SquashedArgs = squash_external_avms(ParsedArgs),
+    MergedArgs = maps:merge(?DEFAULT_OPTIONS, atomvm_rebar3_plugin:proplist_to_map(SquashedArgs)),
+    rebar_api:debug("MergedArgs: ~p", [MergedArgs]),
+    MergedArgs.
 
 %% @private
-parse_args([], Accum) ->
-    {ok, Accum};
-parse_args(["-e", AVMPath | Rest], Accum) ->
+squash_external_avm({external, AVMPath}, Accum) ->
     case filelib:is_file(AVMPath) of
         true ->
-            parse_args(Rest, Accum#{external_avms => [AVMPath | maps:get(external_avms, Accum)]});
+            case proplists:get_value(external_avms, Accum) of
+                undefined ->
+                    [{external_avms, [AVMPath]} | Accum];
+                OtherAVMs ->
+                    [{external_avms, [AVMPath | OtherAVMs]} | proplists:delete(external_avms, Accum)]
+            end;
         _ ->
-            {error, io_lib:format("File does not exist: ~p", [AVMPath])}
+            throw({enoent, AVMPath})
     end;
-parse_args(["--external", AVMPath | Rest], Accum) ->
-    case filelib:is_file(AVMPath) of
-        true ->
-            parse_args(Rest, Accum#{external_avms => [AVMPath | maps:get(external_avms, Accum)]});
-        _ ->
-            {error, io_lib:format("File does not exist: ~s", [AVMPath])}
-    end;
-parse_args(["-p" | Rest], Accum) ->
-    parse_args(Rest, Accum#{prune => true});
-parse_args(["--prune" | Rest], Accum) ->
-    parse_args(Rest, Accum#{prune => true});
-parse_args(["-f" | Rest], Accum) ->
-    parse_args(Rest, Accum#{force => true});
-parse_args(["--force" | Rest], Accum) ->
-    parse_args(Rest, Accum#{force => true});
-parse_args(["-s", StartModule | Rest], Accum) ->
-    parse_args(Rest, Accum#{start_module => StartModule});
-parse_args(["--start", StartModule | Rest], Accum) ->
-    parse_args(Rest, Accum#{start_module => StartModule});
-parse_args(["-i" | Rest], Accum) ->
-    parse_args(["--include_lines" | Rest], Accum);
-parse_args(["--include_lines" | Rest], Accum) ->
-    io:format("Note.  The -i flag is deprecated.  Lines are now included by default.  Use -r|--remove_lines to remove lines from generated files.~n"),
-    parse_args(Rest, Accum#{include_lines => true});
-parse_args(["-r" | Rest], Accum) ->
-    parse_args(Rest, Accum#{include_lines => false});
-parse_args(["--remove_lines" | Rest], Accum) ->
-    parse_args(Rest, Accum#{include_lines => false});
-parse_args([_ | Rest], Accum) ->
-    parse_args(Rest, Accum).
+squash_external_avm(Any, Accum) ->
+    [Any | Accum].
 
--record(file_set, {
-    name, out_dir, beam_files, priv_files, app_file
-}).
+%% @private
+squash_external_avms(ParsedArgs) ->
+    lists:foldl(
+        fun squash_external_avm/2,
+        [],
+        ParsedArgs
+    ).
 
 %% @private
 do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IncludeLines) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
-    try
-        DepsAvms = [
-            maybe_create_packbeam(DepFileSet, [], false, Force, undefined, IncludeLines)
-         || DepFileSet <- DepFileSets
-        ],
-        [
-            maybe_create_packbeam(
-                ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule, IncludeLines
-            )
-         || ProjectAppFileSet <- ProjectAppFileSets
-        ]
-    catch
-        _:E:S ->
-            rebar_api:error("Packbeam creation failed: ~p : ~p", [E, S])
-    end.
+    DepsAvms = [
+        maybe_create_packbeam(DepFileSet, [], false, Force, undefined, IncludeLines)
+        || DepFileSet <- DepFileSets
+    ],
+    [
+        maybe_create_packbeam(
+            ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule, IncludeLines
+        )
+        || ProjectAppFileSet <- ProjectAppFileSets
+    ],
+    ok.
 
 %% @private
 get_files(App) ->
@@ -241,6 +224,7 @@ maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IncludeLines
         true ->
             create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines);
         _ ->
+            rebar_api:debug("No packbeam build needed.", []),
             TargetAVM
     end.
 
@@ -282,17 +266,20 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines) ->
         ok = file:set_cwd(DirName),
         AvmFilename = Name ++ ".avm",
         FileList = reorder_beamfiles(BeamFiles) ++ AppFileBinFiles ++ BootFile ++ PrivFilesRelative ++ AvmFiles,
-        packbeam_api:create(
-            AvmFilename,
-            FileList,
-            #{
-                prune => Prune,
-                start_module => StartModule,
-                application_module => ApplicationModule,
-                include_lines => IncludeLines
-            }
+        Opts = #{
+            prune => Prune,
+            start_module => StartModule,
+            application_module => ApplicationModule,
+            include_lines => IncludeLines
+        },
+        rebar_api:debug(
+            "Creating AVM file ~p from FileList ~p.  Opts: ~p",
+            [AvmFilename, FileSet, Opts]
         ),
-        rebar_api:info("AVM file written to : ~s", [AvmFilename]),
+        packbeam_api:create(
+            AvmFilename, FileList, Opts
+        ),
+        rebar_api:info("AVM file written to ~s/~s", [OutDir, AvmFilename]),
         filename:join(DirName, AvmFilename)
     after
         ok = file:set_cwd(Cwd)

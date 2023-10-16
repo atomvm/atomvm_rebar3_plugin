@@ -28,8 +28,8 @@
 -define(PROVIDER, stm32_flash).
 -define(DEPS, [packbeam]).
 -define(OPTS, [
-    {stflash, $s, "stflash", undefined, "Path to st-flash"},
-    {offset, $o, "offset", undefined, "Offset (default 0x8080000)"}
+    {stflash, $s, "stflash", string, "Path to st-flash"},
+    {offset, $o, "offset", string, "Offset (default 0x8080000)"}
 ]).
 
 %%
@@ -59,26 +59,28 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    case parse_args(rebar_state:command_args(State)) of
-        {ok, Opts} ->
-            do_flash(
-                rebar_state:project_apps(State),
-                maps:get(
-                    stflash,
-                    Opts,
-                    os:getenv(
-                        "ATOMVM_REBAR3_PLUGIN_STM32_STFLASH",
-                        "st-flash"
-                    )
-                ),
-                maps:get(
-                    offset, Opts, os:getenv("ATOMVM_REBAR3_PLUGIN_STM32_FLASH_OFFSET", "0x8080000")
+    try
+        Opts = get_opts(rebar_state:command_parsed_args(State)),
+        ok = do_flash(
+            rebar_state:project_apps(State),
+            maps:get(
+                stflash,
+                Opts,
+                os:getenv(
+                    "ATOMVM_REBAR3_PLUGIN_STM32_STFLASH",
+                    "st-flash"
                 )
             ),
-            {ok, State};
-        {error, Reason} ->
-            io:format("~p~n", [Reason]),
-            {error, Reason}
+            maps:get(
+                offset, Opts,
+                os:getenv("ATOMVM_REBAR3_PLUGIN_STM32_FLASH_OFFSET", "0x8080000")
+            )
+        ),
+        {ok, State}
+    catch
+        _:E ->
+            rebar_api:error("~p~n", [E]),
+            {error, E}
     end.
 
 -spec format_error(any()) -> iolist().
@@ -90,22 +92,8 @@ format_error(Reason) ->
 %%
 
 %% @private
-parse_args(Args) ->
-    parse_args(Args, #{external_avms => [], prune => false, force => false}).
-
-%% @private
-parse_args([], Accum) ->
-    {ok, Accum};
-parse_args(["-s", StFlash | Rest], Accum) ->
-    parse_args(Rest, Accum#{stflash => StFlash});
-parse_args(["--stflash", StFlash | Rest], Accum) ->
-    parse_args(Rest, Accum#{stflash => StFlash});
-parse_args(["-o", Offset | Rest], Accum) ->
-    parse_args(Rest, Accum#{offset => Offset});
-parse_args(["--offset", Offset | Rest], Accum) ->
-    parse_args(Rest, Accum#{offset => Offset});
-parse_args([_ | Rest], Accum) ->
-    parse_args(Rest, Accum).
+get_opts({ParsedArgs, _}) ->
+    atomvm_rebar3_plugin:proplist_to_map(ParsedArgs).
 
 %% @private
 do_flash(ProjectApps, StFlash, Offset) ->
@@ -117,13 +105,9 @@ do_flash(ProjectApps, StFlash, Offset) ->
         ProjectAppAVM,
         Offset
     ]),
-    try
-        rebar_api:info("~s~n", [Cmd]),
-        io:format("~s", [os:cmd(Cmd)])
-    catch
-        _:Error ->
-            rebar_api:error("Error executing ~p.  Error: ~p", [Cmd, Error])
-    end.
+    rebar_api:info("~s~n", [Cmd]),
+    rebar_api:console("~s", [os:cmd(Cmd)]),
+    ok.
 
 %% @private
 get_avm_file(App) ->
