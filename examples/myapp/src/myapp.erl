@@ -1,5 +1,5 @@
 %%
-%% Copyright (c) 2020-2023 Fred Dushin <fred@dushin.net>
+%% Copyright (c) 2023 <fred@dushin.net>
 %% All rights reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,18 +14,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+-module(myapp).
 
-{description, "A minimal AtomVM application"}.
+-export([start/0]).
 
-{variables, [
-    {name, "atomvm_app", "Name of the AtomVM application"}
-]}.
-
-{template, ".gitignore", "{{name}}/.gitignore"}.
-{template, "LICENSE", "{{name}}/LICENSE"}.
-{template, "rebar.config", "{{name}}/rebar.config"}.
-{template, "README.md", "{{name}}/README.md"}.
-
-{dir, "{{name}}/src"}.
-{template, "src/atomvm_app.erl", "{{name}}/src/{{name}}.erl"}.
-{template, "src/atomvm_app.app.src", "{{name}}/src/{{name}}.app.src"}.
+start() ->
+    ok.

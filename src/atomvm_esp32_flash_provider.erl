@@ -1,5 +1,5 @@
 %%
-%% Copyright (c) dushin.net
+%% Copyright (c) 2020-2023 Fred Dushin <fred@dushin.net>
 %% All rights reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,14 @@
     {offset, $o, "offset", string, "Offset (default 0x210000)"}
 ]).
 
+-define(DEFAULT_OPTS, #{
+    esptool => "esptool.py",
+    chip => "auto",
+    port => "/dev/ttyUSB0",
+    baud => 115200,
+    offset => "0x210000"
+}).
+
 %%
 %% provider implementation
 %%
@@ -52,41 +60,26 @@ init(State) ->
         {example, "rebar3 atomvm esp32_flash"},
         % list of options understood by the plugin
         {opts, ?OPTS},
-        {short_desc, "A rebar plugin to flash packbeam to ESP32 devices"},
-        {desc, "A rebar plugin to flash packbeam to ESP32 devices"}
+        {short_desc, "Flash an AtomVM packbeam to an ESP32 device"},
+        {desc,
+            "~n"
+            "Use this plugin to flash an AtomVM packbeam file to an ESP32 device.~n"
+        }
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
     try
-        Opts = get_opts(rebar_state:command_parsed_args(State)),
+        Opts = get_opts(State),
+        rebar_api:debug("Effective opts for ~p: ~p", [?PROVIDER, Opts]),
         ok = do_flash(
             rebar_state:project_apps(State),
-            maps:get(
-                esptool,
-                Opts,
-                os:getenv(
-                    "ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_ESPTOOL",
-                    "esptool.py"
-                )
-            ),
-            maps:get(
-                chip, Opts,
-                os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_CHIP", "auto")
-            ),
-            maps:get(
-                port, Opts,
-                os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_PORT", "/dev/ttyUSB0")
-            ),
-            maps:get(
-                baud, Opts,
-                list_to_integer(os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_BAUD", "115200"))
-            ),
-            maps:get(
-                offset, Opts,
-                os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_OFFSET", "0x210000")
-            )
+            maps:get(esptool, Opts),
+            maps:get(chip, Opts),
+            maps:get(port, Opts),
+            maps:get(baud, Opts),
+            maps:get(offset, Opts)
         ),
         {ok, State}
     catch
@@ -104,8 +97,47 @@ format_error(Reason) ->
 %%
 
 %% @private
-get_opts({ParsedArgs, _}) ->
-    atomvm_rebar3_plugin:proplist_to_map(ParsedArgs).
+get_opts(State) ->
+    {ParsedArgs, _} = rebar_state:command_parsed_args(State),
+    RebarOpts = atomvm_rebar3_plugin:get_atomvm_rebar_provider_config(State, ?PROVIDER),
+    ParsedOpts = atomvm_rebar3_plugin:proplist_to_map(ParsedArgs),
+    maps:merge(
+        env_opts(),
+        maps:merge(RebarOpts, ParsedOpts)
+    ).
+
+%% @private
+env_opts() ->
+    #{
+        esptool => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_ESPTOOL",
+            maps:get(esptool, ?DEFAULT_OPTS)
+        ),
+        chip => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_CHIP",
+            maps:get(chip, ?DEFAULT_OPTS)
+        ),
+        port => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_PORT",
+            maps:get(port, ?DEFAULT_OPTS)
+        ),
+        baud => maybe_convert_string(
+            os:getenv(
+                "ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_BAUD",
+                maps:get(baud, ?DEFAULT_OPTS)
+            )
+        ),
+        offset => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_OFFSET",
+            maps:get(offset, ?DEFAULT_OPTS)
+        )
+    }.
+
+%% @private
+maybe_convert_string(S) when is_list(S) ->
+    list_to_integer(S);
+maybe_convert_string(I) ->
+    I.
 
 %% @private
 do_flash(ProjectApps, EspTool, Chip, Port, Baud, Offset) ->

@@ -1,10 +1,11 @@
 ##
-## Copyright 2020-2023 Fred Dushin <fred@dushin.net>
+## Copyright {{copyright_year}} <{{author_email}}>
 ##
 ## SPDX-License-Identifier: Apache-2.0
 ##
 
 _build/*
+_checkouts/*
 rebar.lock
 rebar3.crashdump
 erl_crash.dump

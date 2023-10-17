@@ -1,5 +1,5 @@
 %%
-%% Copyright (c) dushin.net
+%% Copyright (c) 2020-2023 Fred Dushin <fred@dushin.net>
 %% All rights reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,15 +29,17 @@
     {force, $f, "force", boolean, "Force rebuild"},
     {prune, $p, "prune", boolean, "Prune unreferenced BEAM files"},
     {start, $s, "start", atom, "Start module"},
-    {remove_lines, $r, "remove_lines", boolean, "Remove line information from generated AVM files (off by default)"}
+    {remove_lines, $r, "remove_lines", boolean, "Remove line information from generated AVM files (off by default)"},
+    {list, $l, "list", boolean, "List the contents of AVM files after creation"}
 ]).
 
--define(DEFAULT_OPTIONS, #{
+-define(DEFAULT_OPTS, #{
     external_avms => [],
     force => false,
     prune => false,
     start => undefined,
-    remove_lines => false
+    remove_lines => false,
+    list => false
 }).
 
 -record(file_set, {
@@ -64,15 +66,19 @@ init(State) ->
         {example, "rebar3 atomvm packbeam"},
         % list of options understood by the plugin
         {opts, ?OPTS},
-        {short_desc, "A rebar plugin to create packbeam files"},
-        {desc, "A rebar plugin to create packbeam files"}
+        {short_desc, "Create an AtomVM packbeam file"},
+        {desc,
+            "~n"
+            "Use this plugin to create an AtomVM packbeam file from your rebar3 project.~n"
+        }
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
     try
-        Opts = get_opts(rebar_state:command_parsed_args(State)),
+        Opts = get_opts(State),
+        rebar_api:debug("Effective opts for ~p: ~p", [?PROVIDER, Opts]),
         ok = do_packbeam(
             rebar_state:project_apps(State),
             lists:usort(rebar_state:all_deps(State)),
@@ -80,7 +86,8 @@ do(State) ->
             maps:get(prune, Opts),
             maps:get(force, Opts),
             get_start_module(Opts),
-            not maps:get(remove_lines, Opts)
+            not maps:get(remove_lines, Opts),
+            maps:get(list, Opts)
         ),
         {ok, State}
     catch
@@ -104,11 +111,11 @@ format_error(Reason) ->
 %%
 
 %% @private
-get_opts({ParsedArgs, _}) ->
-    SquashedArgs = squash_external_avms(ParsedArgs),
-    MergedArgs = maps:merge(?DEFAULT_OPTIONS, atomvm_rebar3_plugin:proplist_to_map(SquashedArgs)),
-    rebar_api:debug("MergedArgs: ~p", [MergedArgs]),
-    MergedArgs.
+get_opts(State) ->
+    {ParsedArgs, _} = rebar_state:command_parsed_args(State),
+    RebarOpts = atomvm_rebar3_plugin:get_atomvm_rebar_provider_config(State, ?PROVIDER),
+    SquashedOpts = atomvm_rebar3_plugin:proplist_to_map(squash_external_avms(ParsedArgs)),
+    maps:merge(?DEFAULT_OPTS, maps:merge(RebarOpts, SquashedOpts)).
 
 %% @private
 squash_external_avm({external, AVMPath}, Accum) ->
@@ -135,16 +142,16 @@ squash_external_avms(ParsedArgs) ->
     ).
 
 %% @private
-do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IncludeLines) ->
+do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IncludeLines, List) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
     DepsAvms = [
-        maybe_create_packbeam(DepFileSet, [], false, Force, undefined, IncludeLines)
+        maybe_create_packbeam(DepFileSet, [], false, Force, undefined, IncludeLines, false)
         || DepFileSet <- DepFileSets
     ],
     [
         maybe_create_packbeam(
-            ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule, IncludeLines
+            ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule, IncludeLines, List
         )
         || ProjectAppFileSet <- ProjectAppFileSets
     ],
@@ -209,7 +216,7 @@ get_all_files(Dir) ->
     RegularFiles ++ SubFiles.
 
 %% @private
-maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IncludeLines) ->
+maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IncludeLines, List) ->
     #file_set{
         name = Name,
         out_dir = OutDir,
@@ -222,7 +229,7 @@ maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IncludeLines
     AppFiles = case AppFile of undefined -> []; _ -> [AppFile] end,
     case Force orelse needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles ++ AppFiles) of
         true ->
-            create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines);
+            create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines, List);
         _ ->
             rebar_api:debug("No packbeam build needed.", []),
             TargetAVM
@@ -243,7 +250,7 @@ latest_modified_time(PathList) ->
     lists:max([modified_time(Path) || Path <- PathList]).
 
 %% @private
-create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines) ->
+create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines, List) ->
     #file_set{
         name = Name,
         out_dir = OutDir,
@@ -279,12 +286,41 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines) ->
         packbeam_api:create(
             AvmFilename, FileList, Opts
         ),
-        rebar_api:info("AVM file written to ~s/~s", [OutDir, AvmFilename]),
+        rebar_api:info("AVM file written to ~s/~s", [DirName, AvmFilename]),
+        maybe_list(DirName ++ "/" ++ AvmFilename, List),
         filename:join(DirName, AvmFilename)
     after
         ok = file:set_cwd(Cwd)
     end.
 
+%% @private
+maybe_list(_, false) ->
+    ok;
+maybe_list(AvmPath, _) ->
+    Modules = packbeam_api:list(AvmPath),
+    rebar_api:console("AVM contents~n============", []),
+    lists:foreach(
+        fun(Module) -> list_module(Module) end,
+        Modules
+    ).
+
+%% @private
+list_module(Module) ->
+    ModuleName = proplists:get_value(module_name, Module),
+    Flags = proplists:get_value(flags, Module),
+    Data = proplists:get_value(data, Module),
+    rebar_api:console(
+        "~s~s [~p]", [
+            ModuleName,
+            case packbeam_api:is_entrypoint(Flags) of
+                true -> " *";
+                _ -> ""
+            end,
+            byte_size(Data)
+        ]
+    ).
+
+%% @private
 create_app_file_bin_files(_AppName, _OutDir, undefined) ->
     {undefined, []};
 create_app_file_bin_files(AppName, OutDir, AppFile) ->
