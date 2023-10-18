@@ -58,7 +58,7 @@ proplist_to_map([K | T], Accum) ->
 
 -spec get_atomvm_rebar_provider_config(State :: term(), Provider :: atom()) -> map().
 get_atomvm_rebar_provider_config(State, Provider) ->
-    case rebar_state:get(State, ?MODULE) of
+    case rebar_state:get(State, ?MODULE, undefined) of
         undefined ->
             #{};
         AtomVM ->

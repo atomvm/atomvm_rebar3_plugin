@@ -148,12 +148,15 @@ If you would like to view the contents of the AVM file after you have created it
 The following table enumerates the properties that may be defined in your project's `rebar.config`
 file for this task.  Use `packbeam` as the key for any properties defined for this task.
 
+> Note that the `--list` flag is only operative when the AVM file has been written.  Use the `--force` (`-f`) flag to force a rebuild of the AVM file, if desired.
+
 | Key | Type | Description |
 |-----|------|-------------|
 | `force` | `boolean()` | Always force a rebuild of the AVM file, even if up to date |
 | `prune` | `boolean()` | Prune unecessary BEAM files from generated AVM |
 | `start` | `atom()` | The start module |
 | `remove_lines` | `boolean()` | Remove line number information from generated AVM files.  |
+| `list` | `boolean()` | List the AVM file contents when generating AVM files.  |
 
 Example:
 
