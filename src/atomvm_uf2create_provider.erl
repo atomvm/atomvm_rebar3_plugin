@@ -109,7 +109,7 @@ get_opts(State) ->
 %% @private
 env_opts() ->
     #{
-        reset => os:getenv(
+        start => os:getenv(
             "ATOMVM_REBAR3_PLUGIN_UF2CREATE_START",
             maps:get(start, ?DEFAULT_OPTS)
         )
