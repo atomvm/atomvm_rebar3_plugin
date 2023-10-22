@@ -5,6 +5,8 @@
 ##
 
 _build/*
+_checkouts/*
 rebar.lock
 rebar3.crashdump
 erl_crash.dump
+doc/*

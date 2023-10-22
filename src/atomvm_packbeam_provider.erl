@@ -297,26 +297,25 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines, List) ->
 maybe_list(_, false) ->
     ok;
 maybe_list(AvmPath, _) ->
-    Modules = packbeam_api:list(AvmPath),
+    AVMElements = packbeam_api:list(AvmPath),
     rebar_api:console("AVM contents~n============", []),
     lists:foreach(
-        fun(Module) -> list_module(Module) end,
-        Modules
+        fun list_element/1,
+        AVMElements
     ).
 
 %% @private
-list_module(Module) ->
-    ModuleName = proplists:get_value(module_name, Module),
-    Flags = proplists:get_value(flags, Module),
-    Data = proplists:get_value(data, Module),
+list_element(AVMElement) ->
+    ElementName = packbeam_api:get_element_name(AVMElement),
+    ElementData = packbeam_api:get_element_data(AVMElement),
     rebar_api:console(
         "~s~s [~p]", [
-            ModuleName,
-            case packbeam_api:is_entrypoint(Flags) of
+            ElementName,
+            case packbeam_api:is_entrypoint(AVMElement) of
                 true -> " *";
                 _ -> ""
             end,
-            byte_size(Data)
+            byte_size(ElementData)
         ]
     ).
 
