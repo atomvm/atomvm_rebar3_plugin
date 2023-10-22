@@ -1,0 +1,6 @@
+_build
+_checkouts
+.eunit
+*.plt
+erl_crash.dump
+rebar3.crashdump
