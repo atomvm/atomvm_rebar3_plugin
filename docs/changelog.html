@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.30.7">
+    <meta name="project" content="atomvm_rebar3_plugin v0.7.3">
+
+    <title>Changelog — atomvm_rebar3_plugin v0.7.3</title>
+    <link rel="stylesheet" href="dist/html-erlang-BDSMJ657.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-EPF2X7PV.js"></script>
+    <script src="dist/sidebar_items-F8C92908.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-J2ASZTQE.js"></script>
+
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <label class="search-label">
+      <span class="sr-only">Search documentation of atomvm_rebar3_plugin</span>
+      <input name="q" type="text" class="search-input" placeholder="Search..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+    </label>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+      <i class="ri-close-line ri-lg" title="Cancel search"></i>
+    </button>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="readme.html" class="sidebar-projectName" translate="no">
+atomvm_rebar3_plugin
+      </a>
+      <div class="sidebar-projectVersion" translate="no">
+        v0.7.3
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="icon-action display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+    <a href="https://github.com/atomvm/atomvm_rebar3_plugin/blob/v0.7.3/CHANGELOG.md#L1" title="View Source" class="icon-action" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+
+  <span>Changelog</span>
+</h1>
+
+<p>All notable changes to this project will be documented in this file.</p><p>The format is based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
+and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p><h2 id="0-7-3-2023-11-25" class="section-heading">
+  <a href="#0-7-3-2023-11-25" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.7.3] (2023.11.25)</span>
+</h2>
+<ul><li>Added support for compiling &quot;bootstrap&quot; erlang files that <code class="inline">rebar3</code> otherwise cannot compile.</li><li>Added profiles to minimize downstream dependencies</li><li>Misc license cleanup</li></ul><h2 id="0-7-2-2023-10-24" class="section-heading">
+  <a href="#0-7-2-2023-10-24" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.7.2] (2023.10.24)</span>
+</h2>
+<ul><li>Updated to depend on <code class="inline">atomvm_packbeam</code> version <code class="inline">0.7.1</code>, to make use of <code class="inline">packbeam_api</code> changes.</li><li>Added tests for <code class="inline">packbeam</code>, <code class="inline">esp32</code>, and <code class="inline">stm32</code> tasks.</li><li>Generate <code class="inline">ex_doc</code> documentation instead of <a href="https://www.erlang.org/doc/man/edoc.html"><code class="inline">edoc</code></a>.</li><li>Added <code class="inline">version</code> task to print the version of the plugin to the console</li></ul><h2 id="0-7-1-2023-10-18" class="section-heading">
+  <a href="#0-7-1-2023-10-18" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.7.1] (2023.10.18)</span>
+</h2>
+<ul><li>Fixed a bug whereby a missing <a href="atomvm_rebar3_plugin.html"><code class="inline">atomvm_rebar3_plugin</code></a> entry in <code class="inline">rebar.config</code> would crash the <code class="inline">packbeam</code> task.</li></ul><h2 id="0-7-0-2023-10-18" class="section-heading">
+  <a href="#0-7-0-2023-10-18" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.7.0] (2023.10.18)</span>
+</h2>
+<ul><li>Moved atomvm tasks under the <code class="inline">atomvm</code> namespace (with support for deprecated tasks in the default namespace)</li><li>Added <code class="inline">utf2create</code> and <code class="inline">pico_flash</code> tasks, for Raspberry Pico support</li><li>Added support for setting options in <code class="inline">rebar.config</code></li><li>Added <code class="inline">--list</code> (<code class="inline">-l</code>) option to <code class="inline">packbeam</code> to to display contents of generated AVM files.</li></ul><h2 id="0-6-1-2023-07-16" class="section-heading">
+  <a href="#0-6-1-2023-07-16" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.6.1] (2023.07.16)</span>
+</h2>
+<h3 id="added" class="section-heading">
+  <a href="#added" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Added</span>
+</h3>
+<ul><li>Added <code class="inline">stm32_flash</code> rebar3 task</li><li>Added <code class="inline">-r|--remove_lines</code> command line option to <code class="inline">packbeam</code> task</li></ul><h3 id="changed" class="section-heading">
+  <a href="#changed" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Changed</span>
+</h3>
+<ul><li>Updated dependency on <code class="inline">atomvm_packbeam</code> 0.6 or later</li><li>Changed default to not remove lines from generated AVM files</li></ul><h2 id="0-6-0-2022-12-18" class="section-heading">
+  <a href="#0-6-0-2022-12-18" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.6.0] (2022.12.18)</span>
+</h2>
+<h3 id="added-1" class="section-heading">
+  <a href="#added-1" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Added</span>
+</h3>
+<ul><li>Added ability to include <code class="inline">&lt;&lt;&quot;Line&quot;&gt;&gt;</code> chunks in BEAM files in generated AVM files</li></ul><h3 id="changed-1" class="section-heading">
+  <a href="#changed-1" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Changed</span>
+</h3>
+<ul><li>Updated dependency on <code class="inline">atomvm_packbeam</code> 0.6.0</li></ul><h2 id="0-5-1-2022-08-31" class="section-heading">
+  <a href="#0-5-1-2022-08-31" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.5.1] (2022.08.31)</span>
+</h2>
+<h3 id="fixed" class="section-heading">
+  <a href="#fixed" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Fixed</span>
+</h3>
+<ul><li>Fixed Hex dependency on atomvm_packbeam 0.5.0</li></ul><h2 id="0-5-0-2022-08-28" class="section-heading">
+  <a href="#0-5-0-2022-08-28" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.5.0] (2022.08.28)</span>
+</h2>
+<h3 id="added-2" class="section-heading">
+  <a href="#added-2" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Added</span>
+</h3>
+<ul><li>Added packing of application bin file to packbeam file.</li></ul><h2 id="0-4-1-2022-06-19" class="section-heading">
+  <a href="#0-4-1-2022-06-19" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.4.1] (2022.06.19)</span>
+</h2>
+<h3 id="changed-2" class="section-heading">
+  <a href="#changed-2" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Changed</span>
+</h3>
+<ul><li>Updated dependency on <code class="inline">atomvm_packbeam</code> 0.4.1</li></ul><h2 id="0-4-0-2022-05-21" class="section-heading">
+  <a href="#0-4-0-2022-05-21" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.4.0] (2022.05.21)</span>
+</h2>
+<h3 id="added-3" class="section-heading">
+  <a href="#added-3" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Added</span>
+</h3>
+<ul><li>Added <code class="inline">erlfmt</code> plugin and formatted code.</li><li>Added <code class="inline">--chip</code> option to <code class="inline">esp32_flash</code> task</li></ul><h3 id="fixed-1" class="section-heading">
+  <a href="#fixed-1" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Fixed</span>
+</h3>
+<ul><li>Fixed a bug that prevented files in directories inside of the <code class="inline">priv</code> directory to be included in packbeam files.</li></ul><h2 id="0-3-0-2022-05-18" class="section-heading">
+  <a href="#0-3-0-2022-05-18" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.3.0] (2022.05.18)</span>
+</h2>
+<h3 id="changed-3" class="section-heading">
+  <a href="#changed-3" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Changed</span>
+</h3>
+<ul><li>Updated dependency on <code class="inline">atomvm_packbeam</code> <code class="inline">0.3.0</code></li></ul><h2 id="0-2-0" class="section-heading">
+  <a href="#0-2-0" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.2.0] (?)</span>
+</h2>
+<h3 id="added-4" class="section-heading">
+  <a href="#added-4" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Added</span>
+</h3>
+<ul><li>Added plugin template for generating applications</li><li>Added support for deployment to hex</li><li>Added support for <code class="inline">--start</code> flag</li></ul><h3 id="changed-4" class="section-heading">
+  <a href="#changed-4" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Changed</span>
+</h3>
+<ul><li>Updated default flash location</li></ul><h2 id="0-1-0-2020-05-17" class="section-heading">
+  <a href="#0-1-0-2020-05-17" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">[0.1.0] (2020.05.17)</span>
+</h2>
+<ul><li>Initial Release</li></ul>
+<div class="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="readme.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+atomvm_rebar3_plugin
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="updating.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+atomvm_rebar3_plugin Update Instructions
+        </span>
+      </a>
+
+  </div>
+</div>
+      <footer class="footer">
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/atomvm_rebar3_plugin/0.7.3" class="footer-hex-package">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/atomvm_rebar3_plugin/0.7.3">Hex Preview</a>
+
+                (<a href="https://preview.hex.pm/preview/atomvm_rebar3_plugin/0.7.3/show/CHANGELOG.md">current file</a>)
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+              Search HexDocs
+            </button>
+
+              <a href="atomvm_rebar3_plugin.epub" title="ePub version">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.30.7) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</main>
+</div>
+
+
+  </body>
+</html>
