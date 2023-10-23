@@ -56,6 +56,7 @@ The [`rebar3`](https://rebar3.org) plugin provides the following tasks under the
 * `stm32_flash`  Flash AtomVM packbeam files to STM32 devices over a serial connection.
 * `uf2create`   Generate a u2f binary from an AtomVM packbeam file.
 * `pico_flash`  Flash "packed" uf2 files to RP2040 (RPi Pico) devices by copying to FATfs.
+* `version`  Print the version of the [`atomvm_rebar3_plugin`](https://atomvm.github.io/atomvm_rebar3_plugin) to the console.
 
 > IMPORTANT!  Some of the above tasks were previously located  under the default [`rebar3`](https://rebar3.org) namespace; however, the commands under the default namespace have been DEPRECATED.  Users will get a  warning message on the console when using deprecated tasks, and any deprecated tasks may be removed in the future without warning.  Be sure to migrate any scripts or code you have to use the `atomvm` namespace.
 
