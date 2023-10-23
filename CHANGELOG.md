@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] (unreleased)
+
+- Updated to depend on `atomvm_packbeam` version `0.7.1`, to make use of `packbeam_api` changes.
+- Added tests for `packbeam`, `esp32`, and `stm32` tasks.
+- Generate `ex_doc` documentation instead of `edoc`.
+
 ## [0.7.1]
 
 - Fixed a bug whereby a missing `atomvm_rebar3_plugin` entry in `rebar.config` would crash the `packbeam` task.
