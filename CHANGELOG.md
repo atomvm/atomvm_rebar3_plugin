@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated to depend on `atomvm_packbeam` version `0.7.1`, to make use of `packbeam_api` changes.
 - Added tests for `packbeam`, `esp32`, and `stm32` tasks.
 - Generate `ex_doc` documentation instead of `edoc`.
+- Added `version` task to print the version of the plugin to the console
 
 ## [0.7.1]
 
