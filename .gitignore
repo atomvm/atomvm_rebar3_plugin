@@ -4,7 +4,10 @@
 ## SPDX-License-Identifier: Apache-2.0
 ##
 
-_build/*
-rebar.lock
-rebar3.crashdump
-erl_crash.dump
+**/_build/**
+**/_checkouts/**
+**/rebar.lock
+**/rebar3.crashdump
+**/erl_crash.dump
+!priv/.gitignore
+!examples/myapp/.gitignore
