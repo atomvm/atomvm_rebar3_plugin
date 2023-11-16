@@ -213,7 +213,7 @@ And the application configuration file (e.g., `myapp.app.src`) should include th
             {env,[]},
             {mod, {myapp_app, []}},
             {modules, []},
-            {licenses, ["Apache 2.0"]},
+            {licenses, ["Apache-2.0"]},
             {links, []}
         ]
     }.
