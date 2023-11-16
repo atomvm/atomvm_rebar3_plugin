@@ -57,6 +57,7 @@ The [`rebar3`](https://rebar3.org) plugin provides the following tasks under the
 * `uf2create`   Generate a u2f binary from an AtomVM packbeam file.
 * `pico_flash`  Flash "packed" uf2 files to RP2040 (RPi Pico) devices by copying to FATfs.
 * `version`  Print the version of the [`atomvm_rebar3_plugin`](https://atomvm.github.io/atomvm_rebar3_plugin) to the console.
+* `bootstrap`  Compile Erlang files that `rebar3` otherwise cannot compile.  Typically, such files include modules from the OTP `kernel` or `stdlib` application that `rebar3` uses internally for its own implementation.
 
 > IMPORTANT!  Some of the above tasks were previously located  under the default [`rebar3`](https://rebar3.org) namespace; however, the commands under the default namespace have been DEPRECATED.  Users will get a  warning message on the console when using deprecated tasks, and any deprecated tasks may be removed in the future without warning.  Be sure to migrate any scripts or code you have to use the `atomvm` namespace.
 
@@ -484,6 +485,59 @@ Alternatively, the following environment variables may be used to control the ab
 Any setting specified on the command line take precedence over entries in `rebar.config`, which in turn take precedence over environment variable settings, which in turn take precedence over the default values specified above.
 
 The `uf2create` task depends on the `packbeam` task, so the packbeam file will get automatically built if any changes have been made to its dependencies.
+
+### The `version` task
+
+use the `version` task to print the current verison of the [`atomvm_rebar3_plugin`](https://atomvm.github.io/atomvm_rebar3_plugin) to the console.
+
+    shell$ rebar3 atomvm version
+    0.7.2
+
+### The `bootstrap` task
+
+Use the `bootstrap` task to compile Erlang files that `rebar3` is otherwise unable to compile.  Typically, such files include modules from the OTP `kernel` or `stdlib` application that `rebar3` uses internally for its own implementation.
+
+> Note.  The default `rebar3` `compile` task has the unfortunate feature (bug?) that it will load files that it compiles, which can be problematic if you are compiling modules that share names with modules that `rebar3` is using as part of its own implementation.
+
+    shell$ rebar3 help atomvm bootstrap
+
+    This plugin is used internally by the atomvm packbeam task to compile
+    modules that cannot be compiled directly by rebar.
+
+    Users typically have no reason to use this task directly.
+
+    Usage: rebar3 atomvm tstrap [-b <bootstrap_dir>] [-f <force>]
+
+    -b, --bootstrap_dir  Bootstrap directory
+    -f, --force         Force rebuild
+
+To use this task, place files that you would like to have compiled by the task in the `bootstrap` directory of your rebar3 project (or in a directory of your choosing -- see below).
+
+    shell$ ls bootstrap
+    application.erl
+
+Files in this directory will be compiled and included in any generated PackBEAM files.
+
+> Note.  The `bootstrap` task is used internally by the [`atomvm_rebar3_plugin`](https://atomvm.github.io/atomvm_rebar3_plugin) when the `packbeam` task is run.  Users typically do not have a need to run this task manually.
+
+The following table enumerates the properties that may be defined in your project's `rebar.config` file for this task.  Use `bootstrap` as the key for any properties defined for this task.
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `force` | `boolean()` | Always force recompilation of bootstrap files, even if up to date |
+| `bootstrap_dir` | `string() \| undefined` | (Optional) path to a directory containing bootstrap files.  By default, the `bootstrap` task will use the `bootstrap` directory in the top-level project directory.  The path may be relative (to where the command is run) or absolute. |
+
+Example:
+
+    {atomvm_rebar3_plugin, [
+        {bootstrap, [
+            {bootstrap_dir, "/path/to/bootstrap_dir"}, force
+        ]}
+    ]}.
+
+Any setting specified on the command line take precedence over entries in `rebar.config`, which in turn take precedence over the default values specified above.
+
+
 
 ## AtomVM App Template
 

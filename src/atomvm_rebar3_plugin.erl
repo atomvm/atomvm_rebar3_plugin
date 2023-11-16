@@ -22,6 +22,7 @@
 -export([proplist_to_map/1, get_atomvm_rebar_provider_config/2]).
 
 -define(PROVIDERS, [
+    atomvm_bootstrap_provider,
     atomvm_packbeam_provider,
     atomvm_esp32_flash_provider,
     atomvm_pico_flash_provider,

@@ -23,7 +23,7 @@
 -include_lib("kernel/include/file.hrl").
 
 -define(PROVIDER, packbeam).
--define(DEPS, [{default, compile}]).
+-define(DEPS, [bootstrap]).
 -define(OPTS, [
     {external, $e, "external", string, "External AVM modules"},
     {force, $f, "force", boolean, "Force rebuild"},

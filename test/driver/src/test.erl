@@ -61,6 +61,10 @@ run_tests(Opts) ->
     ok = stm32_flash_tests:run(Opts),
     io:put_chars("\n"),
 
+    io:put_chars("bootstrap_tests: "),
+    ok = bootstrap_tests:run(Opts),
+    io:put_chars("\n"),
+
     ok.
 
 make_path(Elements) ->
