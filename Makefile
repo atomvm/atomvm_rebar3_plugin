@@ -3,13 +3,13 @@
 ## All rights reserved.
 ##
 
-all: compile doc etest
+all: compile etest doc
 
 compile:
 	rebar3 compile
 
 doc:
-	rebar3 ex_doc
+	rebar3 as doc ex_doc
 
 etest:
 	cd test && ./run.sh
@@ -18,4 +18,4 @@ clean:
 	rm -rf _build
 
 publish: doc
-	rebar3 hex publish --doc-dir docs
+	rebar3 as publish hex publish --doc-dir docs
