@@ -119,16 +119,17 @@ get_opts(State) ->
 
 %% @private
 squash_external_avm({external, AVMPath}, Accum) ->
-    case filelib:is_file(AVMPath) of
+    StrippedPath = string:strip(AVMPath, both),
+    case filelib:is_file(StrippedPath) of
         true ->
             case proplists:get_value(external_avms, Accum) of
                 undefined ->
-                    [{external_avms, [AVMPath]} | Accum];
+                    [{external_avms, [StrippedPath]} | Accum];
                 OtherAVMs ->
-                    [{external_avms, [AVMPath | OtherAVMs]} | proplists:delete(external_avms, Accum)]
+                    [{external_avms, [StrippedPath | OtherAVMs]} | proplists:delete(external_avms, Accum)]
             end;
         _ ->
-            throw({enoent, AVMPath})
+            throw({enoent, StrippedPath})
     end;
 squash_external_avm(Any, Accum) ->
     [Any | Accum].
@@ -159,12 +160,14 @@ do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IncludeL
 
 %% @private
 get_files(App) ->
-    EBinDir = rebar_app_info:ebin_dir(App),
-    BeamFiles = get_beam_files(EBinDir),
-    AppFile = get_app_file(EBinDir),
     OutDir = rebar_app_info:out_dir(App),
+    EBinDir = rebar_app_info:ebin_dir(App),
+    BootstrapEBinDir = filename:join(OutDir, "bootstrap_ebin"),
+    BeamFiles = get_beam_files(EBinDir) ++ get_beam_files(BootstrapEBinDir),
+    AppFile = get_app_file(EBinDir),
     PrivFiles = get_all_files(filename:join(OutDir, "priv")),
     Name = binary_to_list(rebar_app_info:name(App)),
+    % rebar_api:info("BEAM files for App ~p from OutDir ~p: ~p", [rebar_app_info:name(App), OutDir, BeamFiles]),
     #file_set{
         name = Name,
         out_dir = OutDir,
@@ -175,7 +178,12 @@ get_files(App) ->
 
 %% @private
 get_beam_files(Dir) ->
-    [filename:join(Dir, Mod) || Mod <- filelib:wildcard("*.beam", Dir)].
+    case filelib:is_dir(Dir) of
+        true ->
+            [filename:join(Dir, Mod) || Mod <- filelib:wildcard("*.beam", Dir)];
+        _ ->
+            []
+    end.
 
 %% @private
 get_app_file(Dir) ->

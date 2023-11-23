@@ -136,8 +136,19 @@ do_bootstrap_app(App, BootstrapDir, Force) ->
 %% @private
 do_bootstrap_file(App, BootstrapFile, Force) ->
     OutDir = rebar_app_info:out_dir(App),
-    EBinDir = filename:join(OutDir, "ebin"),
+    EBinDir = filename:join(OutDir, "bootstrap_ebin"),
+    ok = ensure_path(EBinDir),
     maybe_compile(App, BootstrapFile, EBinDir, Force).
+
+%% @private
+ensure_path(Dir) ->
+    case filelib:is_dir(Dir) of
+        true ->
+            ok;
+        _ ->
+            ok = filelib:ensure_dir(Dir),
+            ok = file:make_dir(Dir)
+    end.
 
 %% @private
 maybe_compile(App, BootstrapFile, EBinDir, Force) ->
@@ -152,7 +163,7 @@ maybe_compile(App, BootstrapFile, EBinDir, Force) ->
                 BootstrapFile, CompilerOptions
             ) of
                 {ok, ModuleName} ->
-                    rebar_api:info("Compiled bootstrap module ~p", [ModuleName]),
+                    rebar_api:debug("Compiled bootstrap module ~p", [ModuleName]),
                     ok;
                 Error ->
                     rebar_api:error("Failed to compile bootstrap file ~s: ~p", [BootstrapFile, Error]),
