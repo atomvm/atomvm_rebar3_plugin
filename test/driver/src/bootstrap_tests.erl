@@ -33,8 +33,7 @@ test_bootstrap_task(Opts) ->
     Output = test:execute_cmd(Cmd, Opts),
     test:debug(Output, Opts),
 
-    ok = test:expect_contains("Compiled bootstrap module application", Output),
-    AppblicationBeamPath = test:make_path([AppDir, "_build/default/lib/myapp/ebin/application.beam"]),
+    AppblicationBeamPath = test:make_path([AppDir, "_build/default/lib/myapp/bootstrap_ebin/application.beam"]),
     ok = test:file_exists(AppblicationBeamPath),
 
     test:tick().
