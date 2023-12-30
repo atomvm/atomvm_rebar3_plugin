@@ -23,6 +23,7 @@ run(Opts) ->
     ok = test_start(Opts),
     ok = test_prune(Opts),
     ok = test_rebar_overrides(Opts),
+    ok = test_otp_application(Opts),
     ok.
 
 %% @private
@@ -175,6 +176,39 @@ test_rebar_overrides(Opts) ->
 
     3 = length(AVMElements2),
     [MyAppBeam, StartBeam, MyAppApplicationBin] = AVMElements2,
+
+    test:tick().
+
+%% @private
+test_otp_application(Opts) ->
+
+    AppsDir = maps:get(apps_dir, Opts),
+    AppDir = test:make_path([AppsDir, "otp_application"]),
+
+    Cmd = create_packbeam_cmd(AppDir, ["-f"], []), %% -f temporary during dev
+    Output = test:execute_cmd(Cmd, Opts),
+    test:debug(Output, Opts),
+
+    ok = test:expect_contains("AVM file written to", Output),
+    ok = test:expect_contains("_build/default/lib/my_app.avm", Output),
+    AVMPath = test:make_path([AppDir, "_build/default/lib/my_app.avm"]),
+    ok = test:file_exists(AVMPath),
+    AVMElements = test:get_avm_elements(AVMPath),
+
+    [InitShimBeam | _Rest] = AVMElements,
+    true = packbeam_api:is_beam(InitShimBeam),
+    true = packbeam_api:is_entrypoint(InitShimBeam),
+
+    {value, StartBoot} = test:find_avm_element_by_name("init/priv/start.boot", AVMElements),
+    false = packbeam_api:is_beam(StartBoot),
+
+    {value, MyAppBeam} = test:find_avm_element_by_name("my_app.beam", AVMElements),
+    true = packbeam_api:is_beam(MyAppBeam),
+    false = packbeam_api:is_entrypoint(MyAppBeam),
+
+    {value, MyAppApplicationBin} = test:find_avm_element_by_name("my_app/priv/application.bin", AVMElements),
+    false = packbeam_api:is_beam(MyAppApplicationBin),
+    false = packbeam_api:is_entrypoint(MyAppApplicationBin),
 
     test:tick().
 

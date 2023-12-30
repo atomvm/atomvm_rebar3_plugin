@@ -29,6 +29,7 @@
     {force, $f, "force", boolean, "Force rebuild"},
     {prune, $p, "prune", boolean, "Prune unreferenced BEAM files"},
     {start, $s, "start", atom, "Start module"},
+    {application, $a, "application", boolean, "Build a OTP application"},
     {remove_lines, $r, "remove_lines", boolean, "Remove line information from generated AVM files (off by default)"},
     {list, $l, "list", boolean, "List the contents of AVM files after creation"}
 ]).
@@ -38,9 +39,31 @@
     force => false,
     prune => false,
     start => undefined,
+    application => false,
     remove_lines => false,
     list => false
 }).
+
+%% abstract representation of a simple shim that
+%% delegates to `init:start/0`.  This form will
+%% be compiled and inserted into the AVM if the
+%% user has indicated that the project is an (OTP)
+%% application.
+%%
+%% This form was generated from the init_shim.erl
+%% asset, as follows:
+%%
+%% epp:parse_file("assets/init_shim.erl", []).
+%%
+-define(INIT_SHIM_FORMS, [
+    {attribute, 1, file, {"assets/init_shim.erl", 1}},
+    {attribute, 1, module, init_shim},
+    {attribute, 3, export, [{start, 0}]},
+    {function, 5, start, 0, [
+        {clause, 5, [], [], [{call, 6, {remote, 6, {atom, 6, init}, {atom, 6, boot}}, []}]}
+    ]},
+    {eof, 7}
+]).
 
 -record(file_set, {
     name, out_dir, beam_files, priv_files, app_file
@@ -86,6 +109,7 @@ do(State) ->
             maps:get(prune, Opts),
             maps:get(force, Opts),
             get_start_module(Opts),
+            maps:get(application, Opts),
             not maps:get(remove_lines, Opts),
             maps:get(list, Opts)
         ),
@@ -143,16 +167,16 @@ squash_external_avms(ParsedArgs) ->
     ).
 
 %% @private
-do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IncludeLines, List) ->
+do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IsApplication, IncludeLines, List) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
     DepsAvms = [
-        maybe_create_packbeam(DepFileSet, [], false, Force, undefined, IncludeLines, false)
+        maybe_create_packbeam(DepFileSet, [], false, Force, undefined, false, IncludeLines, false)
         || DepFileSet <- DepFileSets
     ],
     [
         maybe_create_packbeam(
-            ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule, IncludeLines, List
+            ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule, IsApplication, IncludeLines, List
         )
         || ProjectAppFileSet <- ProjectAppFileSets
     ],
@@ -224,7 +248,7 @@ get_all_files(Dir) ->
     RegularFiles ++ SubFiles.
 
 %% @private
-maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IncludeLines, List) ->
+maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IsApplication, IncludeLines, List) ->
     #file_set{
         name = Name,
         out_dir = OutDir,
@@ -237,7 +261,7 @@ maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IncludeLines
     AppFiles = case AppFile of undefined -> []; _ -> [AppFile] end,
     case Force orelse needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles ++ AppFiles) of
         true ->
-            create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines, List);
+            create_packbeam(FileSet, AvmFiles, Prune, StartModule, IsApplication, IncludeLines, List);
         _ ->
             rebar_api:debug("No packbeam build needed.", []),
             TargetAVM
@@ -258,7 +282,7 @@ latest_modified_time(PathList) ->
     lists:max([modified_time(Path) || Path <- PathList]).
 
 %% @private
-create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines, List) ->
+create_packbeam(FileSet, AvmFiles, Prune, StartModule, IsApplication, IncludeLines, List) ->
     #file_set{
         name = Name,
         out_dir = OutDir,
@@ -269,21 +293,31 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines, List) ->
     N = length(OutDir) + 1,
     PrivFilesRelative = [filename:join(Name, string:slice(PrivFile, N)) || PrivFile <- PrivFiles],
     {ApplicationModule, AppFileBinFiles} = create_app_file_bin_files(Name, OutDir, AppFile),
-    BootFile = case StartModule of
-        init ->
-            [create_boot_file(OutDir, ApplicationModule)];
-        _ ->
-            []
-    end,
+    BootFiles =
+        case IsApplication of
+            true ->
+                [create_boot_file(OutDir, ApplicationModule), create_init_shim(OutDir)];
+            _ ->
+                case StartModule of
+                    init ->
+                        rebar_api:warn(
+                            "Specifying `init` as the start module to generate an OTP application is deprecated.  "
+                            "Use the `--application` (or `-a`) option, instead.", []
+                        ),
+                        [create_boot_file(OutDir, ApplicationModule)];
+                    _ ->
+                        []
+                end
+        end,
     Cwd = rebar_dir:get_cwd(),
     try
         DirName = filename:dirname(OutDir),
         ok = file:set_cwd(DirName),
         AvmFilename = Name ++ ".avm",
-        FileList = reorder_beamfiles(BeamFiles) ++ AppFileBinFiles ++ BootFile ++ PrivFilesRelative ++ AvmFiles,
+        FileList = reorder_beamfiles(BeamFiles) ++ AppFileBinFiles ++ BootFiles ++ PrivFilesRelative ++ AvmFiles,
         Opts = #{
             prune => Prune,
-            start_module => StartModule,
+            start_module => effective_start_module(StartModule, IsApplication),
             application_module => ApplicationModule,
             include_lines => IncludeLines
         },
@@ -300,6 +334,12 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule, IncludeLines, List) ->
     after
         ok = file:set_cwd(Cwd)
     end.
+
+%% @private
+effective_start_module(_StartModule, true) ->
+    init_shim;
+effective_start_module(StartModule, _) ->
+    StartModule.
 
 %% @private
 maybe_list(_, false) ->
@@ -355,7 +395,18 @@ create_boot_file(OutDir, ApplicationModule) ->
     WritePath = filename:join([OutDir, "start.boot"]),
     Bin = erlang:term_to_binary(BootSpec),
     ok = file:write_file(WritePath, Bin),
-    {WritePath, filename:join(["init", "priv", "start.boot"])}.
+    StartBootPath = filename:join(["init", "priv", "start.boot"]),
+    rebar_api:debug("Created boot file ~s in ~s", [StartBootPath, WritePath]),
+    {WritePath, StartBootPath}.
+
+%% @private
+create_init_shim(OutDir) ->
+    EBinDir = filename:join([OutDir, "ebin"]),
+    {ok, init_shim, Data} = compile:forms(?INIT_SHIM_FORMS, []),
+    WritePath = filename:join([EBinDir, "init_shim.beam"]),
+    ok = file:write_file(WritePath, Data),
+    rebar_api:debug("Created init_shim.beam in ~s", [WritePath]),
+    {WritePath, "init_shim.beam"}.
 
 %% @private
 reorder_beamfiles(BeamFiles) ->
