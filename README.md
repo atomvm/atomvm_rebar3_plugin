@@ -430,7 +430,9 @@ If your pico uses a different device path or mount directory supply the full pat
 
     shell$ rebar3 atomvm pico_flash --path /mnt/pico --reset /dev/cu.usbmodem1411202
 
-> Warning: There is currently a known bug that occurs when the VM is compiled with the `-DAVM_WAIT_FOR_USB_CONNECT` cmake option. If you have previously connected to the tty serial port with `screen`, `minicom`, or similar and have disconnected or closed the session, the device will take unusually long to reset and fail to mount the FAT partition within 30 seconds and `pico_flash` will fail. This can be worked around by unplugging the pico from usb and plug it back in again, before repeating the flash procedure.
+> Note: If you use the `pico_flash` task while you are still connected to a serial monitoring application such as `minicom` or `screen` the `pico_flash` task will attempt to locate [`picotool`](https://github.com/raspberrypi/picotool) in the users PATH. If `picotool` is found it will be used to reboot the pico, disconnecting the serial monitor in the process, and the device will be put into `BOOTSEL` mode after it is rebooted. If `picotool` is not available the user will be informed, and reminded that manually closing the serial monitor is necessary before using `pico_flash`.
+
+> Warning: There is currently a known bug that occurs when the VM has exited, the processor is left in as hung state. The device will take unusually long attempting to reset, and fail to mount the FAT partition within 30 seconds and `pico_flash` will fail. There is work under way to fix this bug, but in the meantime it can be worked around by unplugging the pico from usb and plug it back in again, before repeating the flash procedure.
 
 The following table enumerates the properties that may be defined in your project's `rebar.config` file for this task.  Use `pico_flash` as the key for any properties defined for this task.
 
