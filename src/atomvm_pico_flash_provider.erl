@@ -54,10 +54,10 @@ init(State) ->
         {example, "rebar3 atomvm pico_flash"},
         % list of options understood by the plugin
         {opts, ?OPTS},
-        {short_desc, "Convert an AtomVM packbeam file to uf2 and copy to a an rp2040 device"},
+        {short_desc, "Convert an AtomVM packbeam file to uf2 and copy to an rp2040 device"},
         {desc,
             "~n"
-            "Use this plugin to convert an AtomVM packbeam file to a rp2040 a uf2 file and copy to an rp2040 devices.~n"
+            "Use this plugin to convert an AtomVM packbeam file to a uf2 file and copy to an rp2040 device.~n"
         }
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
@@ -74,8 +74,8 @@ do(State) ->
         ),
         {ok, State}
     catch
-        C:E:S ->
-            rebar_api:error("An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [?PROVIDER, C, E, S]),
+        _C:E:_S ->
+            rebar_api:error("An error occurred in the ~p task.  Error=~p~n", [?PROVIDER, E]),
             {error, E}
     end.
 
@@ -158,7 +158,7 @@ wait_for_mount(Mount, Count) when Count < 30 ->
     end;
 wait_for_mount(Mount, 30) ->
     rebar_api:error("Pico not mounted at ~s after 30 seconds. giving up...", [Mount]),
-    rebar_api:abort().
+    erlang:throw(mount_error).
 
 %% @private
 check_pico_mount(Mount) ->
@@ -170,7 +170,7 @@ check_pico_mount(Mount) ->
             ok;
         "false\n" ->
             rebar_api:error("Pico not mounted at ~s.", [Mount]),
-            rebar_api:abort()
+            erlang:throw(no_device)
     end.
 
 %% @private
@@ -202,19 +202,41 @@ do_flash(ProjectApps, PicoPath, ResetPort) ->
             ok;
         true ->
             Flag = get_stty_file_flag(),
-            Reset = lists:join(" ", [
+            BootselMode = lists:join(" ", [
                 "stty", Flag, ResetPort, "1200"
             ]),
             rebar_api:info("Resetting device at path ~s", [ResetPort]),
-            ResetStatus = os:cmd(Reset),
+            ResetStatus = os:cmd(BootselMode),
             case ResetStatus of
                 "" ->
                     ok;
-                _Any ->
-                    rebar_api:error("Reset ~s failed. Is tty console attached?", [ResetPort]),
-                    rebar_api:abort()
+                Error ->
+                    case os:find_executable(picotool) of
+                        false ->
+                            rebar_api:error("Warning: ~s~nUnable to locate 'picotool', close the serial monitor before flashing, or install picotool for automatic disconnect and BOOTSEL mode.", [Error]),
+                            erlang:throw(reset_error);
+                        _Path ->
+                            rebar_api:warn("Warning: ~s~nFor faster flashing remember to disconnect serial monitor first.", [Error]),
+                            DevReset = lists:join(" ", [
+                                "picotool", "reboot", "-f", "-u"
+                            ]),
+                            rebar_api:warn("Disconnecting serial monitor with: `~s' in 5 seconds...", [DevReset]),
+                            timer:sleep(5000),
+                            RebootReturn = os:cmd(DevReset),
+                            RebootStatus = string:trim(RebootReturn),
+                            case RebootStatus of
+                                "The device was asked to reboot into BOOTSEL mode." ->
+                                    ok;
+                                BootError ->
+                                    rebar_api:error("Failed to prepare pico for flashing: ~s", [BootError]),
+                                    erlang:throw(picoflash_reboot_error)
+                            end
+                    end
             end,
-            rebar_api:info("Waiting for the device at path ~s to settle and mount...", [PicoPath]),
+            PrettyPath = lists:join(" ", [
+                "echo", PicoPath
+            ]),
+            rebar_api:info("Waiting for the device at path ~s to settle and mount...", [string:trim(os:cmd(PrettyPath))]),
             wait_for_mount(PicoPath, 0)
     end,
     check_pico_mount(PicoPath),
@@ -222,6 +244,5 @@ do_flash(ProjectApps, PicoPath, ResetPort) ->
     Cmd = lists:join(" ", [
         "cp", "-v", TargetUF2, PicoPath
     ]),
-    rebar_api:info("Copying ~s to ~s...~n", [TargetUF2, PicoPath]),
-    io:format("~s", [os:cmd(Cmd)]),
+    rebar_api:info("Copying packbeam files...~n~s", [os:cmd(Cmd)]),
     ok.
