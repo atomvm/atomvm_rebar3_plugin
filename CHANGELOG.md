@@ -5,13 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.4] (unreleased)
+## [0.7.4] (2024.06.06)
 
+### Added
 - Added support for the `--application` (or `-a`) option to support AtomVM OTP applications.
+
+### Fixed
+- Fixed the `rebar3 new atomvm_app`  template rebar.config file to use the provided app name for the start module.
 
 ### Changed
 
 - Using the `-s init` option is still supported but deprecated.  Use the `--application` (or `-a`) option to generate OTP applications using AtomVM.
+- `pico_flash` task now uses picotool to reset the rp2040 device if a serial monitor is attached.
 
 ## [0.7.3] (2023.11.25)
 
