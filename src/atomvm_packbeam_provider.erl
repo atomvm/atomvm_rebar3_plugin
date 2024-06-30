@@ -186,8 +186,9 @@ do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IsApplic
 get_files(App) ->
     OutDir = rebar_app_info:out_dir(App),
     EBinDir = rebar_app_info:ebin_dir(App),
+    TestDir = filename:join([rebar_app_info:dir(App), "test"]),
     BootstrapEBinDir = filename:join(OutDir, "bootstrap_ebin"),
-    BeamFiles = get_beam_files(EBinDir) ++ get_beam_files(BootstrapEBinDir),
+    BeamFiles = get_beam_files(EBinDir) ++ get_beam_files(BootstrapEBinDir) ++ get_beam_files(TestDir),
     AppFile = get_app_file(EBinDir),
     PrivFiles = get_all_files(filename:join(OutDir, "priv")),
     Name = binary_to_list(rebar_app_info:name(App)),
