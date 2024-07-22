@@ -142,10 +142,15 @@ maybe_convert_string(I) ->
 %% @private
 do_flash(ProjectApps, EspTool, Chip, Port, Baud, Offset) ->
     [ProjectAppAVM | _] = [get_avm_file(ProjectApp) || ProjectApp <- ProjectApps],
+    Portparam =
+        case Port of
+            "auto" -> "";
+            _ -> ["--port ", Port]
+        end,
     Cmd = lists:join(" ", [
         EspTool,
         "--chip", Chip,
-        "--port", Port,
+        Portparam,
         "--baud", integer_to_list(Baud),
         "--before", "default_reset",
         "--after", "hard_reset",
