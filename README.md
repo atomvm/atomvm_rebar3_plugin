@@ -401,7 +401,7 @@ You may use the `pico_flash` task to copy the generated AtomVM packbeam applicat
 The `pico_flash` task depends on the `uf2create` task which in turn depends on `packbeam`, so in most cases it is not necessary to execute either of those tasks if the default settings are used, as any changes to modules in the project will get rebuilt before being flashed to the device.
 
     shell$ rebar3 atomvm pico_flash
-    ===> Fetching atomvm_rebar3_plugin v0.7.3
+    ===> Fetching atomvm_rebar3_plugin v0.7.4
     ===> Fetching rebar3_hex v7.0.6
     ===> Fetching hex_core v0.8.4
     ===> Fetching verl v1.1.1
@@ -409,7 +409,7 @@ The `pico_flash` task depends on the `uf2create` task which in turn depends on `
     ===> Compiling hex_core
     ===> Compiling verl
     ===> Compiling rebar3_hex
-    ===> Fetching atomvm_packbeam v0.6.0
+    ===> Fetching atomvm_packbeam v0.7.3
     ===> Fetching rebar3_proper v0.12.1
     ===> Analyzing applications...
     ===> Compiling rebar3_proper
@@ -493,7 +493,7 @@ The `uf2create` task depends on the `packbeam` task, so the packbeam file will g
 use the `version` task to print the current verison of the [`atomvm_rebar3_plugin`](https://atomvm.github.io/atomvm_rebar3_plugin) to the console.
 
     shell$ rebar3 atomvm version
-    0.7.3
+    0.7.4
 
 ### The `bootstrap` task
 
