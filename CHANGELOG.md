@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Using the `-s init` option is still supported but deprecated.  Use the `--application` (or `-a`) option to generate OTP applications using AtomVM.
+- Replace `atomvm_uf2create_provider` uf2 creation code with [upstream `uf2tool`](https://github.com/pguyot/uf2tool)
 
 ## [0.7.3] (2023.11.25)
 

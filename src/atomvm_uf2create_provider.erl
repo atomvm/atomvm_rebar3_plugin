@@ -1,10 +1,7 @@
 %
 % This file is part of AtomVM.
 %
-% Copyright 2022 Paul Guyot <pguyot@kallisys.net>
-%
-% Adapted for atomvm_rebar3_plugin:
-% Copyright 2023 Winford (UncleGrumpy) <winford@object.stream>
+% Copyright 2023-24 Winford (UncleGrumpy) <winford@object.stream>
 %
 % Licensed under the Apache License, Version 2.0 (the "License");
 % you may not use this file except in compliance with the License.
@@ -32,13 +29,16 @@
 -define(PROVIDER, uf2create).
 -define(DEPS, [packbeam]).
 -define(OPTS, [
+    {family_id, $f, "family_id", string,
+        "Device family or flavor of uf2 file to create (default rp2040)"},
     {output, $o, "output", string, "Output path/name"},
     {start, $s, "start", string, "Start address for the uf2 binary (default 0x10180000)"},
     {input, $i, "input", string, "Input avm file to convert to uf2"}
 ]).
 
 -define(DEFAULT_OPTS, #{
-    start => "0x10180000"
+    start => os:getenv("ATOMVM_PICO_APP_START", "0x10180000"),
+    family_id => os:getenv("ATOMVM_PICO_UF2_FAMILY", rp2040)
 }).
 
 %%
@@ -75,11 +75,11 @@ do(State) ->
         rebar_api:debug("Effective opts for ~p: ~p", [?PROVIDER, Opts]),
         OutFile = get_out_file(State),
         TargetAVM = get_avm_file(State),
-        ok = do_uf2create(
-            maps:get(output, Opts, OutFile),
-            parse_addr(maps:get(start, Opts)),
-            maps:get(input, Opts, TargetAVM)
-        ),
+        Output = maps:get(output, Opts, OutFile),
+        StartAddrStr = parse_addr(maps:get(start, Opts)),
+        Image = maps:get(input, Opts, TargetAVM),
+        Uf2Flavor = validate_flavor(maps:get(family_id, Opts)),
+        ok = uf2tool:uf2create(Output, Uf2Flavor, StartAddrStr, Image),
         {ok, State}
     catch
         C:E:S ->
@@ -115,6 +115,10 @@ env_opts() ->
         start => os:getenv(
             "ATOMVM_REBAR3_PLUGIN_UF2CREATE_START",
             maps:get(start, ?DEFAULT_OPTS)
+        ),
+        family_id => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_UF2_FAMILY",
+            maps:get(family_id, ?DEFAULT_OPTS)
         )
     }.
 
@@ -142,62 +146,27 @@ parse_addr("16#" ++ AddrHex) ->
 parse_addr(AddrDec) ->
     list_to_integer(AddrDec).
 
-%%% UF2 defines
--define(UF2_MAGIC_START0, 16#0A324655).
--define(UF2_MAGIC_START1, 16#9E5D5157).
--define(UF2_MAGIC_END, 16#0AB16F30).
-
--define(UF2_FLAG_FAMILY_ID_PRESENT, 16#00002000).
-
-%%% Pico defines
--define(UF2_PICO_FLAGS, ?UF2_FLAG_FAMILY_ID_PRESENT).
--define(UF2_PICO_PAGE_SIZE, 256).
--define(UF2_PICO_FAMILY_ID, 16#E48BFF56).
-
-%%%
-
-do_uf2create(OutputPath, StartAddr, ImagePath) ->
-    {ok, ImageBin} = file:read_file(ImagePath),
-    BlocksCount0 = byte_size(ImageBin) div ?UF2_PICO_PAGE_SIZE,
-    BlocksCount =
-        BlocksCount0 +
-            if
-                byte_size(ImageBin) rem ?UF2_PICO_PAGE_SIZE =:= 0 -> 0;
-                true -> 1
-            end,
-    OutputBin = uf2create0(0, BlocksCount, StartAddr, ImageBin, []),
-    ok = file:write_file(OutputPath, OutputBin).
-
 %% @private
-uf2create0(_BlockIndex, _BlocksCount, _BaseAddr, <<>>, Acc) ->
-    lists:reverse(Acc);
-uf2create0(BlockIndex, BlocksCount, BaseAddr, ImageBin, Acc) ->
-    {PageBin, Tail} =
-        if
-            byte_size(ImageBin) >= ?UF2_PICO_PAGE_SIZE ->
-                split_binary(ImageBin, ?UF2_PICO_PAGE_SIZE);
-            true ->
-                {ImageBin, <<>>}
-        end,
-    PaddedData = pad_binary(PageBin, 476),
-    Block = [
-        <<
-            ?UF2_MAGIC_START0:32/little,
-            ?UF2_MAGIC_START1:32/little,
-            ?UF2_PICO_FLAGS:32/little,
-            BaseAddr:32/little,
-            ?UF2_PICO_PAGE_SIZE:32/little,
-            BlockIndex:32/little,
-            BlocksCount:32/little,
-            ?UF2_PICO_FAMILY_ID:32/little
-        >>,
-        PaddedData,
-        <<?UF2_MAGIC_END:32/little>>
-    ],
-    uf2create0(BlockIndex + 1, BlocksCount, BaseAddr + ?UF2_PICO_PAGE_SIZE, Tail, [Block | Acc]).
-
-%% @private
-pad_binary(Bin, Len) ->
-    PadCount = Len - byte_size(Bin),
-    Pad = binary:copy(<<0>>, PadCount),
-    [Bin, Pad].
+validate_flavor(Flavor) ->
+    case Flavor of
+        rp2040 ->
+            rp2040;
+        "rp2040" ->
+            rp2040;
+        rp2035 ->
+            data;
+        "rp2035" ->
+            data;
+        data ->
+            data;
+        "data" ->
+            data;
+        universal ->
+            universal;
+        "universal" ->
+            universal;
+        Family ->
+            rebar_api:error("An error occurred in the ~p task. Invalid family_id ~p~n", [
+                ?PROVIDER, Family
+            ])
+    end.

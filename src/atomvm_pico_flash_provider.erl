@@ -125,26 +125,30 @@ get_stty_file_flag() ->
 %% @private
 get_reset_base() ->
     {_Fam, System} = os:type(),
-    case System of
-        linux ->
-            "/dev/ttyACM*";
-        darwin ->
-            "/dev/cu.usbmodem14*";
-        _Other ->
-            ""
-    end.
+    Base =
+        case System of
+            linux ->
+                "/dev/ttyACM*";
+            darwin ->
+                "/dev/cu.usbmodem14*";
+            _Other ->
+                ""
+        end,
+    os:getenv("ATOMVM_PICO_RESET_DEV", Base).
 
 %% @private
 get_default_mount() ->
     {_Fam, System} = os:type(),
-    case System of
-        linux ->
-            "/run/media/" ++ os:getenv("USER") ++ "/RPI-RP2";
-        darwin ->
-            "/Volumes/RPI-RP2";
-        _Other ->
-            ""
-    end.
+    Default =
+        case System of
+            linux ->
+                "/run/media/" ++ os:getenv("USER") ++ "/RPI-RP2";
+            darwin ->
+                "/Volumes/RPI-RP2";
+            _Other ->
+                ""
+        end,
+    os:getenv("ATOMVM_PICO_MOUNT_PATH", Default).
 
 %% @private
 wait_for_mount(Mount, Count) when Count < 30 ->
