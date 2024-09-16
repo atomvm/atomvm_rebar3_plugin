@@ -1,5 +1,5 @@
 %%
-%% Copyright (c) 2023 Uncle Grumpy <winford@object.stream>
+%% Copyright (c) 2023-2024 Uncle Grumpy <winford@object.stream>
 %% All rights reserved.
 %%
 %% Based on esp32_flash_provider.erl
@@ -106,27 +106,27 @@ env_opts() ->
         ),
         reset => os:getenv(
             "ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV",
-            get_reset_dev()
+            get_reset_base()
         )
     }.
 
 %% @private
 get_stty_file_flag() ->
-    System = os:cmd("uname -s"),
+    {_Fam, System} = os:type(),
     case System of
-        "Linux\n" ->
+        linux ->
             "-F";
         _Other ->
             "-f"
     end.
 
 %% @private
-get_reset_dev() ->
-    System = os:cmd("uname -s"),
+get_reset_base() ->
+    {_Fam, System} = os:type(),
     case System of
-        "Linux\n" ->
-            "/dev/ttyACM0";
-        "Darwin\n" ->
+        linux ->
+            "/dev/ttyACM*";
+        darwin ->
             "/dev/cu.usbmodem14*";
         _Other ->
             ""
@@ -134,11 +134,11 @@ get_reset_dev() ->
 
 %% @private
 get_default_mount() ->
-    System = os:cmd("uname -s"),
+    {_Fam, System} = os:type(),
     case System of
-        "Linux\n" ->
-            "/run/media/${USER}/RPI-RP2";
-        "Darwin\n" ->
+        linux ->
+            "/run/media/" ++ os:getenv("USER") ++ "/RPI-RP2";
+        darwin ->
             "/Volumes/RPI-RP2";
         _Other ->
             ""
@@ -146,13 +146,16 @@ get_default_mount() ->
 
 %% @private
 wait_for_mount(Mount, Count) when Count < 30 ->
-    Cmd = lists:join(" ", [
-        "sh -c \"(test -d", Mount, "&& echo 'true') || echo 'false'\""
-    ]),
-    case os:cmd(Cmd) of
-        "true\n" ->
-            ok;
-        "false\n" ->
+    try
+        case file:read_link_info(Mount) of
+            {ok, #file_info{type = directory} = _Info} ->
+                ok;
+            _ ->
+                timer:sleep(1000),
+                wait_for_mount(Mount, Count + 1)
+        end
+    catch
+        _ ->
             timer:sleep(1000),
             wait_for_mount(Mount, Count + 1)
     end;
@@ -162,29 +165,78 @@ wait_for_mount(Mount, 30) ->
 
 %% @private
 check_pico_mount(Mount) ->
-    Cmd = lists:join(" ", [
-        "sh -c \"(test -d", Mount, "&& echo 'true') || echo 'false'\""
-    ]),
-    case os:cmd(Cmd) of
-        "true\n" ->
-            ok;
-        "false\n" ->
+    try
+        case file:read_link_info(Mount) of
+            {ok, #file_info{type = directory} = _Info} ->
+                rebar_api:debug("Pico mounted at ~s.", [Mount]),
+                ok;
+            _ ->
+                rebar_api:error("Pico not mounted at ~s.", [Mount]),
+                erlang:throw(no_device)
+        end
+    catch
+        _ ->
             rebar_api:error("Pico not mounted at ~s.", [Mount]),
             erlang:throw(no_device)
     end.
 
 %% @private
-needs_reset(ResetPort) ->
-    Test = lists:join(" ", [
-        "sh -c \"(test -e",
-        ResetPort,
-        "&& echo 'true') || echo 'false'\""
-    ]),
-    case os:cmd(Test) of
-        "true\n" ->
-            true;
-        "false\n" ->
+needs_reset(ResetBase) ->
+    case filelib:wildcard(ResetBase) of
+        [] ->
+            false;
+        [ResetPort | _T] ->
+            case file:read_link_info(ResetPort) of
+                {ok, #file_info{type = device} = _Info} ->
+                    {true, ResetPort};
+                _ ->
+                    false
+            end;
+        _ ->
             false
+    end.
+
+%% @private
+do_reset(ResetPort) ->
+    Flag = get_stty_file_flag(),
+    BootselMode = lists:join(" ", [
+        "stty", Flag, ResetPort, "1200"
+    ]),
+    rebar_api:debug("Resetting device at path ~s", [ResetPort]),
+    ResetStatus = os:cmd(BootselMode),
+    case ResetStatus of
+        "" ->
+            ok;
+        Error ->
+            case os:find_executable(picotool) of
+                false ->
+                    rebar_api:error(
+                        "Warning: ~s~nUnable to locate 'picotool', close the serial monitor before flashing, or install picotool for automatic disconnect and BOOTSEL mode.",
+                        [Error]
+                    ),
+                    erlang:throw(reset_error);
+                Picotool ->
+                    rebar_api:warn(
+                        "Warning: ~s~nFor faster flashing remember to disconnect serial monitor first.",
+                        [Error]
+                    ),
+                    DevReset = lists:join(" ", [
+                        Picotool, "reboot", "-f", "-u"
+                    ]),
+                    rebar_api:warn("Disconnecting serial monitor with: `~s' in 5 seconds...", [
+                        DevReset
+                    ]),
+                    timer:sleep(5000),
+                    RebootReturn = os:cmd(DevReset),
+                    RebootStatus = string:trim(RebootReturn),
+                    case RebootStatus of
+                        "The device was asked to reboot into BOOTSEL mode." ->
+                            ok;
+                        BootError ->
+                            rebar_api:error("Failed to prepare pico for flashing: ~s", [BootError]),
+                            erlang:throw(picoflash_reboot_error)
+                    end
+            end
     end.
 
 %% @private
@@ -196,53 +248,36 @@ get_uf2_file(ProjectApps) ->
     filename:join(DirName, Name ++ ".uf2").
 
 %% @private
-do_flash(ProjectApps, PicoPath, ResetPort) ->
-    case needs_reset(ResetPort) of
+get_uf2_appname(ProjectApps) ->
+    [App | _] = [ProjectApp || ProjectApp <- ProjectApps],
+    binary_to_list(rebar_app_info:name(App)).
+
+%% @private
+do_flash(ProjectApps, PicoPath, ResetBase) ->
+    case needs_reset(ResetBase) of
         false ->
+            rebar_api:debug("No Pico found matching ~s.", [ResetBase]),
             ok;
-        true ->
-            Flag = get_stty_file_flag(),
-            BootselMode = lists:join(" ", [
-                "stty", Flag, ResetPort, "1200"
+        {true, ResetPort} ->
+            rebar_api:debug("Pico at ~s needs reset...", [ResetPort]),
+            do_reset(ResetPort),
+            rebar_api:info("Waiting for the device at path ~s to settle and mount...", [
+                string:trim(PicoPath)
             ]),
-            rebar_api:info("Resetting device at path ~s", [ResetPort]),
-            ResetStatus = os:cmd(BootselMode),
-            case ResetStatus of
-                "" ->
-                    ok;
-                Error ->
-                    case os:find_executable(picotool) of
-                        false ->
-                            rebar_api:error("Warning: ~s~nUnable to locate 'picotool', close the serial monitor before flashing, or install picotool for automatic disconnect and BOOTSEL mode.", [Error]),
-                            erlang:throw(reset_error);
-                        _Path ->
-                            rebar_api:warn("Warning: ~s~nFor faster flashing remember to disconnect serial monitor first.", [Error]),
-                            DevReset = lists:join(" ", [
-                                "picotool", "reboot", "-f", "-u"
-                            ]),
-                            rebar_api:warn("Disconnecting serial monitor with: `~s' in 5 seconds...", [DevReset]),
-                            timer:sleep(5000),
-                            RebootReturn = os:cmd(DevReset),
-                            RebootStatus = string:trim(RebootReturn),
-                            case RebootStatus of
-                                "The device was asked to reboot into BOOTSEL mode." ->
-                                    ok;
-                                BootError ->
-                                    rebar_api:error("Failed to prepare pico for flashing: ~s", [BootError]),
-                                    erlang:throw(picoflash_reboot_error)
-                            end
-                    end
-            end,
-            PrettyPath = lists:join(" ", [
-                "echo", PicoPath
-            ]),
-            rebar_api:info("Waiting for the device at path ~s to settle and mount...", [string:trim(os:cmd(PrettyPath))]),
             wait_for_mount(PicoPath, 0)
     end,
     check_pico_mount(PicoPath),
     TargetUF2 = get_uf2_file(ProjectApps),
-    Cmd = lists:join(" ", [
-        "cp", "-v", TargetUF2, PicoPath
-    ]),
-    rebar_api:info("Copying packbeam files...~n~s", [os:cmd(Cmd)]),
+    App = get_uf2_appname(ProjectApps),
+    File = App ++ ".uf2",
+    Dest = filename:join(PicoPath, File),
+    rebar_api:info("Copying ~s", [File]),
+    case file:copy(TargetUF2, Dest) of
+        {ok, _Size} ->
+            ok;
+        CopyError ->
+            rebar_api:error("Failed to copy application file ~s to pico: ~s", [File, CopyError]),
+            erlang:throw(picoflash_copy_error)
+    end,
+    rebar_api:info("Successfully loaded ~s application to device at path ~s.", [App, PicoPath]),
     ok.
