@@ -1,3 +1,8 @@
+<!--
+ Copyright 2020-2023 Fred Dushin <fred@dushin.net>
+
+ SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+-->
 # atomvm_rebar3_plugin
 
 A [`rebar3`](https://rebar3.org) plugin for simplifying development of Erlang applications targeted for the [AtomVM](http://github.com/atomvm/AtomVM) Erlang abstract machine.

@@ -14,6 +14,10 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%
+% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%
+
 -module(my_app).
 
 -export([start/2, stop/1]).
