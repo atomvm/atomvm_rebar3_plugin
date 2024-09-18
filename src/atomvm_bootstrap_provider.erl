@@ -65,8 +65,7 @@ init(State) ->
             "This plugin is used internally by the atomvm packbeam task to compile~n"
             "modules that cannot be compiled directly by rebar.~n"
             "~n"
-            "Users typically have no reason to use this task directly.~n"
-        }
+            "Users typically have no reason to use this task directly.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -84,7 +83,11 @@ do(State) ->
         {ok, State}
     catch
         C:E:S ->
-            rebar_api:error("An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [?PROVIDER, C, E, S]),
+            rebar_api:error(
+                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
+                    ?PROVIDER, C, E, S
+                ]
+            ),
             {error, E}
     end.
 
@@ -124,7 +127,10 @@ do_bootstrap_app(App, BootstrapDir, Force) ->
     % Dir = rebar_app_info:dir(App),
     case filelib:is_dir(BootstrapDir) of
         true ->
-            BootstrapFiles = [filename:join(BootstrapDir, Mod) || Mod <- filelib:wildcard("*.erl", BootstrapDir)],
+            BootstrapFiles = [
+                filename:join(BootstrapDir, Mod)
+             || Mod <- filelib:wildcard("*.erl", BootstrapDir)
+            ],
             lists:foreach(
                 fun(BootstrapFile) ->
                     do_bootstrap_file(App, BootstrapFile, Force)
@@ -159,17 +165,24 @@ maybe_compile(App, BootstrapFile, EBinDir, Force) ->
     BeamFile = filename:join(EBinDir, Basename ++ ".beam"),
     case Force orelse needs_build(BootstrapFile, BeamFile) of
         true ->
-            CompilerOptions = [{outdir, EBinDir}, report] ++
-                get_compiler_options(App),
-            rebar_api:debug("Compiling bootstrap file ~s with options ~p ...", [BootstrapFile, CompilerOptions]),
-            case compile:file(
+            CompilerOptions =
+                [{outdir, EBinDir}, report] ++
+                    get_compiler_options(App),
+            rebar_api:debug("Compiling bootstrap file ~s with options ~p ...", [
                 BootstrapFile, CompilerOptions
-            ) of
+            ]),
+            case
+                compile:file(
+                    BootstrapFile, CompilerOptions
+                )
+            of
                 {ok, ModuleName} ->
                     rebar_api:debug("Compiled bootstrap module ~p", [ModuleName]),
                     ok;
                 Error ->
-                    rebar_api:error("Failed to compile bootstrap file ~s: ~p", [BootstrapFile, Error]),
+                    rebar_api:error("Failed to compile bootstrap file ~s: ~p", [
+                        BootstrapFile, Error
+                    ]),
                     Error
             end;
         _ ->

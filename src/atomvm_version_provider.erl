@@ -52,8 +52,7 @@ init(State) ->
         {short_desc, "Print the version of this plugin to the console."},
         {desc,
             "~n"
-            "Use this task to print the version of this plugin to the console.~n"
-        }
+            "Use this task to print the version of this plugin to the console.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -71,7 +70,11 @@ do(State) ->
         {ok, State}
     catch
         C:E:S ->
-            rebar_api:error("An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [?PROVIDER, C, E, S]),
+            rebar_api:error(
+                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
+                    ?PROVIDER, C, E, S
+                ]
+            ),
             {error, E}
     end.
 

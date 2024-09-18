@@ -63,8 +63,7 @@ init(State) ->
         {short_desc, "Flash an AtomVM packbeam file to an STM32 device"},
         {desc,
             "~n"
-            "Use this plugin to flash an AtomVM packbeam file to an STM32 device.~n"
-        }
+            "Use this plugin to flash an AtomVM packbeam file to an STM32 device.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -81,7 +80,11 @@ do(State) ->
         {ok, State}
     catch
         C:E:S ->
-            rebar_api:error("An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [?PROVIDER, C, E, S]),
+            rebar_api:error(
+                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
+                    ?PROVIDER, C, E, S
+                ]
+            ),
             {error, E}
     end.
 

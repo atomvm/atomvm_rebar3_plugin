@@ -22,7 +22,9 @@
 -export([start/2, stop/1]).
 
 start(StartType, StartArgs) ->
-    io:format("Starting otp_application_app with start type ~p and start args ~p ...~n", [StartType, StartArgs]),
+    io:format("Starting otp_application_app with start type ~p and start args ~p ...~n", [
+        StartType, StartArgs
+    ]),
     otp_application_sup:start(StartArgs).
 
 stop(_State) ->

@@ -30,16 +30,16 @@ start(Args) ->
 %%
 
 init(Args) ->
-    {ok, {
-        {one_for_one, 1, 1}, [
-            {
-                otp_application_worker,
-                {otp_application_worker, start_link, [Args]},
-                permanent,
-                brutal_kill,
-                worker,
-                []
-            }
-        ]
-    }
-}.
+    {ok,
+        {
+            {one_for_one, 1, 1}, [
+                {
+                    otp_application_worker,
+                    {otp_application_worker, start_link, [Args]},
+                    permanent,
+                    brutal_kill,
+                    worker,
+                    []
+                }
+            ]
+        }}.

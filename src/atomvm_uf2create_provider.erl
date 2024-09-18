@@ -64,8 +64,7 @@ init(State) ->
         {short_desc, "Create a Raspberry Pico uf2 file from an AtomVM packbeam file"},
         {desc,
             "~n"
-            "Use this plugin to create Raspberry Pico uf2 files from an AtomVM packbeam file.~n"
-        }
+            "Use this plugin to create Raspberry Pico uf2 files from an AtomVM packbeam file.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -84,7 +83,11 @@ do(State) ->
         {ok, State}
     catch
         C:E:S ->
-            rebar_api:error("An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [?PROVIDER, C, E, S]),
+            rebar_api:error(
+                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
+                    ?PROVIDER, C, E, S
+                ]
+            ),
             {error, E}
     end.
 

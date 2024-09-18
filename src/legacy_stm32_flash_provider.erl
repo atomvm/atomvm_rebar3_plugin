@@ -55,8 +55,7 @@ init(State) ->
         {desc,
             "A rebar plugin to flash packbeam files to STM32 devices.~n~n"
             "IMPORTANT! this plugin has been DEPRECATED!~n"
-            "Use `rebar3 atomvm stm32_flash`, instead.~n"
-        }
+            "Use `rebar3 atomvm stm32_flash`, instead.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 

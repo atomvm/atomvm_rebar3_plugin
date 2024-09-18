@@ -29,22 +29,24 @@ run(Opts) ->
 
 %% @private
 test_flags(Opts) ->
-
     test_flags(Opts, [], [
         {"", "0x8080000"}
     ]),
 
-    test_flags(Opts, [
+    test_flags(
+        Opts,
+        [
             {"-o", "0x1234"}
-        ], [
+        ],
+        [
             {"", "0x1234"}
-    ]),
+        ]
+    ),
 
     ok.
 
 %% @private
 test_flags(Opts, Flags, FlagExpectList) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "myapp"]),
 
@@ -69,7 +71,6 @@ test_env_overrides(Opts) ->
 
 %% @private
 test_env_overrides(Opts, EnvVar, Value, Flag) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "myapp"]),
 
@@ -84,12 +85,13 @@ test_env_overrides(Opts, EnvVar, Value, Flag) ->
 %% @private
 test_rebar_overrides(Opts) ->
     %% the rebar_overrides rebar.config specifies a 0x1234 offset
-    test_rebar_overrides(Opts, [], "ATOMVM_REBAR3_PLUGIN_STM32_FLASH_OFFSET", "0x54321", "", "0x1234"),
+    test_rebar_overrides(
+        Opts, [], "ATOMVM_REBAR3_PLUGIN_STM32_FLASH_OFFSET", "0x54321", "", "0x1234"
+    ),
     ok.
 
 %% @private
 test_rebar_overrides(Opts, Flags, EnvVar, Value, Flag, ExpectedValue) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "rebar_overrides"]),
 

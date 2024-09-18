@@ -29,8 +29,10 @@
     {external, $e, "external", string, "External AVM modules"},
     {force, $f, "force", boolean, "Force rebuild"},
     {prune, $p, "prune", boolean, "Prune unreferenced BEAM files"},
-    {include_lines, $i, "include_lines", boolean, "Include line information in generated AVM files (DEPRECATED)"},
-    {remove_lines, $r, "remove_lines", boolean, "Remove line information from generated AVM files (off by default)"},
+    {include_lines, $i, "include_lines", boolean,
+        "Include line information in generated AVM files (DEPRECATED)"},
+    {remove_lines, $r, "remove_lines", boolean,
+        "Remove line information from generated AVM files (off by default)"},
     {start, $s, "start", atom, "Start module"}
 ]).
 
@@ -56,8 +58,7 @@ init(State) ->
         {desc,
             "A rebar plugin to create packbeam files.~n~n"
             "IMPORTANT! this plugin has been DEPRECATED!~n"
-            "Use `rebar3 atomvm packbeam`, instead.~n"
-        }
+            "Use `rebar3 atomvm packbeam`, instead.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
