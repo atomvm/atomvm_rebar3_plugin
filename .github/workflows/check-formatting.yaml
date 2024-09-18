@@ -1,0 +1,35 @@
+#
+#  Copyright 2022 Davide Bettio <davide@uninstall.it>
+#
+#  SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+#
+
+name: "Check formatting"
+
+on:
+  push:
+    paths:
+      - '**/*.erl'
+  pull_request:
+    paths:
+      - '**/*.erl'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref != 'refs/heads/master' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  erlfmt-check:
+    runs-on: ubuntu-24.04
+    container: erlang:27
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: "Check formatting with Erlang fmt"
+      run: |
+        cd ..
+        git clone --depth 1 -b v1.1.0 https://github.com/WhatsApp/erlfmt.git
+        cd erlfmt
+        rebar3 as release escriptize
+        cd ../atomvm_rebar3_plugin
+        find . -name *.erl | xargs ../erlfmt/_build/release/bin/erlfmt -c
