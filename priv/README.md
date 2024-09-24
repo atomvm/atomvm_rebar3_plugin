@@ -1,3 +1,8 @@
+<!--
+ Copyright {{copyright_year}} <{{author_email}}>
+
+ SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+-->
 # {{name}}
 
 Welcome to the {{name}} AtomVM application.

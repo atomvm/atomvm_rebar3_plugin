@@ -14,6 +14,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%%
+%% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%%
 -module(otp_application_sup).
 
 -export([start/1, init/1]).
@@ -27,16 +30,16 @@ start(Args) ->
 %%
 
 init(Args) ->
-    {ok, {
-        {one_for_one, 1, 1}, [
-            {
-                otp_application_worker,
-                {otp_application_worker, start_link, [Args]},
-                permanent,
-                brutal_kill,
-                worker,
-                []
-            }
-        ]
-    }
-}.
+    {ok,
+        {
+            {one_for_one, 1, 1}, [
+                {
+                    otp_application_worker,
+                    {otp_application_worker, start_link, [Args]},
+                    permanent,
+                    brutal_kill,
+                    worker,
+                    []
+                }
+            ]
+        }}.

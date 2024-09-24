@@ -14,6 +14,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%
+% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%
 -module(bootstrap_tests).
 
 -export([run/1]).
@@ -25,7 +28,6 @@ run(Opts) ->
 
 %% @private
 test_bootstrap_task(Opts) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "bootstrap"]),
 
@@ -33,14 +35,14 @@ test_bootstrap_task(Opts) ->
     Output = test:execute_cmd(Cmd, Opts),
     test:debug(Output, Opts),
 
-    AppblicationBeamPath = test:make_path([AppDir, "_build/default/lib/myapp/bootstrap_ebin/application.beam"]),
+    AppblicationBeamPath = test:make_path([
+        AppDir, "_build/default/lib/myapp/bootstrap_ebin/application.beam"
+    ]),
     ok = test:file_exists(AppblicationBeamPath),
 
     test:tick().
 
-
 test_packbeam_with_bootstrap(Opts) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "bootstrap"]),
 

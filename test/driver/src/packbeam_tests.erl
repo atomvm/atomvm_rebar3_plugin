@@ -14,6 +14,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%
+% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%
 -module(packbeam_tests).
 
 -export([run/1]).
@@ -28,11 +31,11 @@ run(Opts) ->
 
 %% @private
 test_defaults(Opts) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "myapp"]),
 
-    Cmd = create_packbeam_cmd(AppDir, ["-f"], []), %% -f temporary during dev
+    %% -f temporary during dev
+    Cmd = create_packbeam_cmd(AppDir, ["-f"], []),
     Output = test:execute_cmd(Cmd, Opts),
     test:debug(Output, Opts),
 
@@ -55,11 +58,11 @@ test_defaults(Opts) ->
 
 %% @private
 test_start(Opts) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "multi-start"]),
 
-    Cmd = create_packbeam_cmd(AppDir, ["-f"], []), %% -f temporary during dev
+    %% -f temporary during dev
+    Cmd = create_packbeam_cmd(AppDir, ["-f"], []),
     Output = test:execute_cmd(Cmd, Opts),
     test:debug(Output, Opts),
 
@@ -96,11 +99,11 @@ test_start(Opts) ->
 
 %% @private
 test_prune(Opts) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "prune"]),
 
-    Cmd = create_packbeam_cmd(AppDir, ["-f"], []), %% -f temporary during dev
+    %% -f temporary during dev
+    Cmd = create_packbeam_cmd(AppDir, ["-f"], []),
     Output = test:execute_cmd(Cmd, Opts),
     test:debug(Output, Opts),
 
@@ -140,11 +143,11 @@ test_prune(Opts) ->
 
 %% @private
 test_rebar_overrides(Opts) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "rebar_overrides"]),
 
-    Cmd = create_packbeam_cmd(AppDir, ["-f"], []), %% -f temporary during dev
+    %% -f temporary during dev
+    Cmd = create_packbeam_cmd(AppDir, ["-f"], []),
     Output = test:execute_cmd(Cmd, Opts),
     test:debug(Output, Opts),
 
@@ -181,11 +184,11 @@ test_rebar_overrides(Opts) ->
 
 %% @private
 test_otp_application(Opts) ->
-
     AppsDir = maps:get(apps_dir, Opts),
     AppDir = test:make_path([AppsDir, "otp_application"]),
 
-    Cmd = create_packbeam_cmd(AppDir, ["-f"], []), %% -f temporary during dev
+    %% -f temporary during dev
+    Cmd = create_packbeam_cmd(AppDir, ["-f"], []),
     Output = test:execute_cmd(Cmd, Opts),
     test:debug(Output, Opts),
 
@@ -206,7 +209,9 @@ test_otp_application(Opts) ->
     true = packbeam_api:is_beam(MyAppBeam),
     false = packbeam_api:is_entrypoint(MyAppBeam),
 
-    {value, MyAppApplicationBin} = test:find_avm_element_by_name("my_app/priv/application.bin", AVMElements),
+    {value, MyAppApplicationBin} = test:find_avm_element_by_name(
+        "my_app/priv/application.bin", AVMElements
+    ),
     false = packbeam_api:is_beam(MyAppApplicationBin),
     false = packbeam_api:is_entrypoint(MyAppApplicationBin),
 

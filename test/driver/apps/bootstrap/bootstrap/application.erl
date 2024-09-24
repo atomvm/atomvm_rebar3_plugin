@@ -23,7 +23,6 @@
     start/1, stop/1, get_env/2, get_env/3, set_env/3, set_env/4, ensure_all_started/1
 ]).
 
-
 start(Application) ->
     avm_application_controller:start_application(Application).
 

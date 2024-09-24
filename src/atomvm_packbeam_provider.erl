@@ -14,6 +14,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%
+% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%
 -module(atomvm_packbeam_provider).
 
 -behaviour(provider).
@@ -30,7 +33,8 @@
     {prune, $p, "prune", boolean, "Prune unreferenced BEAM files"},
     {start, $s, "start", atom, "Start module"},
     {application, $a, "application", boolean, "Build a OTP application"},
-    {remove_lines, $r, "remove_lines", boolean, "Remove line information from generated AVM files (off by default)"},
+    {remove_lines, $r, "remove_lines", boolean,
+        "Remove line information from generated AVM files (off by default)"},
     {list, $l, "list", boolean, "List the contents of AVM files after creation"}
 ]).
 
@@ -92,8 +96,7 @@ init(State) ->
         {short_desc, "Create an AtomVM packbeam file"},
         {desc,
             "~n"
-            "Use this plugin to create an AtomVM packbeam file from your rebar3 project.~n"
-        }
+            "Use this plugin to create an AtomVM packbeam file from your rebar3 project.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -116,7 +119,11 @@ do(State) ->
         {ok, State}
     catch
         C:E:S ->
-            rebar_api:error("An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [?PROVIDER, C, E, S]),
+            rebar_api:error(
+                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
+                    ?PROVIDER, C, E, S
+                ]
+            ),
             {error, E}
     end.
 
@@ -150,7 +157,10 @@ squash_external_avm({external, AVMPath}, Accum) ->
                 undefined ->
                     [{external_avms, [StrippedPath]} | Accum];
                 OtherAVMs ->
-                    [{external_avms, [StrippedPath | OtherAVMs]} | proplists:delete(external_avms, Accum)]
+                    [
+                        {external_avms, [StrippedPath | OtherAVMs]}
+                        | proplists:delete(external_avms, Accum)
+                    ]
             end;
         _ ->
             throw({enoent, StrippedPath})
@@ -167,18 +177,27 @@ squash_external_avms(ParsedArgs) ->
     ).
 
 %% @private
-do_packbeam(ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IsApplication, IncludeLines, List) ->
+do_packbeam(
+    ProjectApps, Deps, ExternalAVMs, Prune, Force, StartModule, IsApplication, IncludeLines, List
+) ->
     DepFileSets = [get_files(Dep) || Dep <- Deps],
     ProjectAppFileSets = [get_files(ProjectApp) || ProjectApp <- ProjectApps],
     DepsAvms = [
         maybe_create_packbeam(DepFileSet, [], false, Force, undefined, false, IncludeLines, false)
-        || DepFileSet <- DepFileSets
+     || DepFileSet <- DepFileSets
     ],
     [
         maybe_create_packbeam(
-            ProjectAppFileSet, DepsAvms ++ ExternalAVMs, Prune, Force, StartModule, IsApplication, IncludeLines, List
+            ProjectAppFileSet,
+            DepsAvms ++ ExternalAVMs,
+            Prune,
+            Force,
+            StartModule,
+            IsApplication,
+            IncludeLines,
+            List
         )
-        || ProjectAppFileSet <- ProjectAppFileSets
+     || ProjectAppFileSet <- ProjectAppFileSets
     ],
     ok.
 
@@ -188,7 +207,8 @@ get_files(App) ->
     EBinDir = rebar_app_info:ebin_dir(App),
     TestDir = filename:join([rebar_app_info:dir(App), "test"]),
     BootstrapEBinDir = filename:join(OutDir, "bootstrap_ebin"),
-    BeamFiles = get_beam_files(EBinDir) ++ get_beam_files(BootstrapEBinDir) ++ get_beam_files(TestDir),
+    BeamFiles =
+        get_beam_files(EBinDir) ++ get_beam_files(BootstrapEBinDir) ++ get_beam_files(TestDir),
     AppFile = get_app_file(EBinDir),
     PrivFiles = get_all_files(filename:join(OutDir, "priv")),
     Name = binary_to_list(rebar_app_info:name(App)),
@@ -219,7 +239,7 @@ get_app_file(Dir) ->
             undefined;
         [AppFile] ->
             AppFile;
-        [AppFile|_] ->
+        [AppFile | _] ->
             rebar_api:warn("Multiple .app files in ~s (using first): ~p", [Dir, AppFiles]),
             AppFile
     end.
@@ -249,7 +269,9 @@ get_all_files(Dir) ->
     RegularFiles ++ SubFiles.
 
 %% @private
-maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IsApplication, IncludeLines, List) ->
+maybe_create_packbeam(
+    FileSet, AvmFiles, Prune, Force, StartModule, IsApplication, IncludeLines, List
+) ->
     #file_set{
         name = Name,
         out_dir = OutDir,
@@ -259,10 +281,16 @@ maybe_create_packbeam(FileSet, AvmFiles, Prune, Force, StartModule, IsApplicatio
     } = FileSet,
     DirName = filename:dirname(OutDir),
     TargetAVM = filename:join(DirName, Name ++ ".avm"),
-    AppFiles = case AppFile of undefined -> []; _ -> [AppFile] end,
+    AppFiles =
+        case AppFile of
+            undefined -> [];
+            _ -> [AppFile]
+        end,
     case Force orelse needs_build(TargetAVM, BeamFiles ++ PrivFiles ++ AvmFiles ++ AppFiles) of
         true ->
-            create_packbeam(FileSet, AvmFiles, Prune, StartModule, IsApplication, IncludeLines, List);
+            create_packbeam(
+                FileSet, AvmFiles, Prune, StartModule, IsApplication, IncludeLines, List
+            );
         _ ->
             rebar_api:debug("No packbeam build needed.", []),
             TargetAVM
@@ -303,7 +331,8 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule, IsApplication, IncludeLin
                     init ->
                         rebar_api:warn(
                             "Specifying `init` as the start module to generate an OTP application is deprecated.  "
-                            "Use the `--application` (or `-a`) option, instead.", []
+                            "Use the `--application` (or `-a`) option, instead.",
+                            []
                         ),
                         [create_boot_file(OutDir, ApplicationModule)];
                     _ ->
@@ -315,7 +344,9 @@ create_packbeam(FileSet, AvmFiles, Prune, StartModule, IsApplication, IncludeLin
         DirName = filename:dirname(OutDir),
         ok = file:set_cwd(DirName),
         AvmFilename = Name ++ ".avm",
-        FileList = reorder_beamfiles(BeamFiles) ++ AppFileBinFiles ++ BootFiles ++ PrivFilesRelative ++ AvmFiles,
+        FileList =
+            reorder_beamfiles(BeamFiles) ++ AppFileBinFiles ++ BootFiles ++ PrivFilesRelative ++
+                AvmFiles,
         Opts = #{
             prune => Prune,
             start_module => effective_start_module(StartModule, IsApplication),
@@ -379,9 +410,13 @@ create_app_file_bin_files(AppName, OutDir, AppFile) ->
                     WritePath = filename:join([OutDir, "application.bin"]),
                     Bin = erlang:term_to_binary(ApplicationSpec),
                     ok = file:write_file(WritePath, Bin),
-                    {ApplicationModule, [{WritePath, filename:join([AppName, "priv", "application.bin"])}]};
+                    {ApplicationModule, [
+                        {WritePath, filename:join([AppName, "priv", "application.bin"])}
+                    ]};
                 _ ->
-                    rebar_api:warn("Consulted app file (~s) does not appear to be an app spec.", [AppFile]),
+                    rebar_api:warn("Consulted app file (~s) does not appear to be an app spec.", [
+                        AppFile
+                    ]),
                     {undefined, []}
             end;
         Error ->
@@ -391,7 +426,8 @@ create_app_file_bin_files(AppName, OutDir, AppFile) ->
 
 %% @private
 create_boot_file(OutDir, ApplicationModule) ->
-    Version = {0, 1, 0}, %% TODO
+    %% TODO
+    Version = {0, 1, 0},
     BootSpec = {boot, Version, #{applications => [ApplicationModule]}},
     WritePath = filename:join([OutDir, "start.boot"]),
     Bin = erlang:term_to_binary(BootSpec),

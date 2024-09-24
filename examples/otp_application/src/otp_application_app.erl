@@ -14,12 +14,17 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%%
+%% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%%
 -module(otp_application_app).
 
 -export([start/2, stop/1]).
 
 start(StartType, StartArgs) ->
-    io:format("Starting otp_application_app with start type ~p and start args ~p ...~n", [StartType, StartArgs]),
+    io:format("Starting otp_application_app with start type ~p and start args ~p ...~n", [
+        StartType, StartArgs
+    ]),
     otp_application_sup:start(StartArgs).
 
 stop(_State) ->

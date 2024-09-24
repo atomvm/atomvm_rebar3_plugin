@@ -14,6 +14,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%
+% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%
 -module(atomvm_esp32_flash_provider).
 
 -behaviour(provider).
@@ -63,8 +66,7 @@ init(State) ->
         {short_desc, "Flash an AtomVM packbeam to an ESP32 device"},
         {desc,
             "~n"
-            "Use this plugin to flash an AtomVM packbeam file to an ESP32 device.~n"
-        }
+            "Use this plugin to flash an AtomVM packbeam file to an ESP32 device.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -84,7 +86,11 @@ do(State) ->
         {ok, State}
     catch
         C:E:S ->
-            rebar_api:error("An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [?PROVIDER, C, E, S]),
+            rebar_api:error(
+                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
+                    ?PROVIDER, C, E, S
+                ]
+            ),
             {error, E}
     end.
 
@@ -149,16 +155,23 @@ do_flash(ProjectApps, EspTool, Chip, Port, Baud, Offset) ->
         end,
     Cmd = lists:join(" ", [
         EspTool,
-        "--chip", Chip,
+        "--chip",
+        Chip,
         Portparam,
-        "--baud", integer_to_list(Baud),
-        "--before", "default_reset",
-        "--after", "hard_reset",
+        "--baud",
+        integer_to_list(Baud),
+        "--before",
+        "default_reset",
+        "--after",
+        "hard_reset",
         "write_flash",
         "-u",
-        "--flash_mode", "keep",
-        "--flash_freq", "keep",
-        "--flash_size", "detect",
+        "--flash_mode",
+        "keep",
+        "--flash_freq",
+        "keep",
+        "--flash_size",
+        "detect",
         Offset,
         ProjectAppAVM
     ]),

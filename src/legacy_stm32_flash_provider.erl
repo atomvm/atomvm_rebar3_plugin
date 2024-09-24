@@ -17,6 +17,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%
+% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%
 -module(legacy_stm32_flash_provider).
 
 -behaviour(provider).
@@ -52,8 +55,7 @@ init(State) ->
         {desc,
             "A rebar plugin to flash packbeam files to STM32 devices.~n~n"
             "IMPORTANT! this plugin has been DEPRECATED!~n"
-            "Use `rebar3 atomvm stm32_flash`, instead.~n"
-        }
+            "Use `rebar3 atomvm stm32_flash`, instead.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 

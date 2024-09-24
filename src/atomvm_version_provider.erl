@@ -14,6 +14,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%
+% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%
 -module(atomvm_version_provider).
 
 -behaviour(provider).
@@ -49,8 +52,7 @@ init(State) ->
         {short_desc, "Print the version of this plugin to the console."},
         {desc,
             "~n"
-            "Use this task to print the version of this plugin to the console.~n"
-        }
+            "Use this task to print the version of this plugin to the console.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -68,7 +70,11 @@ do(State) ->
         {ok, State}
     catch
         C:E:S ->
-            rebar_api:error("An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [?PROVIDER, C, E, S]),
+            rebar_api:error(
+                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
+                    ?PROVIDER, C, E, S
+                ]
+            ),
             {error, E}
     end.
 

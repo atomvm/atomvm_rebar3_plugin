@@ -17,6 +17,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%%
+%% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%%
 -module(atomvm_pico_flash_provider).
 
 -behaviour(provider).
@@ -57,8 +60,7 @@ init(State) ->
         {short_desc, "Convert an AtomVM packbeam file to uf2 and copy to an rp2040 device"},
         {desc,
             "~n"
-            "Use this plugin to convert an AtomVM packbeam file to a uf2 file and copy to an rp2040 device.~n"
-        }
+            "Use this plugin to convert an AtomVM packbeam file to a uf2 file and copy to an rp2040 device.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 

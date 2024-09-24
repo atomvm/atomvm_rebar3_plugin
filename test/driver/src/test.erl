@@ -14,6 +14,9 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%
+% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+%
 -module(test).
 
 -export([run/1]).
@@ -48,7 +51,6 @@ prepare_tests() ->
 
 %% @private
 run_tests(Opts) ->
-
     io:put_chars("packbeam_tests: "),
     ok = packbeam_tests:run(Opts),
     io:put_chars("\n"),
@@ -107,18 +109,19 @@ make_env(Env) ->
         end,
         [],
         Env
-     ).
+    ).
 
 make_opts(Opts) ->
     lists:foldl(
-        fun({Key, Value}, Accum) ->
-            io_lib:format("~s ~s ", [Key, Value]) ++ Accum;
-           (Key, Accum) ->
-            io_lib:format("~s ", [Key]) ++ Accum
+        fun
+            ({Key, Value}, Accum) ->
+                io_lib:format("~s ~s ", [Key, Value]) ++ Accum;
+            (Key, Accum) ->
+                io_lib:format("~s ", [Key]) ++ Accum
         end,
         [],
         Opts
-     ).
+    ).
 
 execute_cmd(Cmd) ->
     execute_cmd(Cmd, false).
