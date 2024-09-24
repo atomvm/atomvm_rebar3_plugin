@@ -160,7 +160,7 @@ file for this task.  Use `packbeam` as the key for any properties defined for th
 | Key | Type | Description |
 |-----|------|-------------|
 | `force` | `boolean()` | Always force a rebuild of the AVM file, even if up to date |
-| `prune` | `boolean()` | Prune unecessary BEAM files from generated AVM |
+| `prune` | `boolean()` | Prune unnecessary BEAM files from generated AVM |
 | `start` | `atom()` | The start module |
 | `remove_lines` | `boolean()` | Remove line number information from generated AVM files.  |
 | `list` | `boolean()` | List the AVM file contents when generating AVM files.  |
@@ -205,7 +205,7 @@ For example, a module that implements the OTP `application` behavior might look 
 
 (assume `myapp_sup` is also a part of your OTP application).
 
-And the application configuration file (e.g., `myapp.app.src`) should include the application mdoule (`myapp_app`) under it's `mod` entry:
+And the application configuration file (e.g., `myapp.app.src`) should include the application module (`myapp_app`) under it's `mod` entry:
 
     {
         application, myapp, [
@@ -297,7 +297,7 @@ The following table enumerates the properties that may be defined in your projec
 | Key | Type | Description |
 |-----|------|-------------|
 | `esptool` | `string()` | Path to the `esptool.py` tool, if not already in user's `PATH` |
-| `chip` | `string()` | ESP32 chipt type |
+| `chip` | `string()` | ESP32 chip type |
 | `port` | `string()` | Device port on which the ESP32 can be located |
 | `baud` | `integer()` | Device BAUD rate |
 | `offset` | `string()` | Offset into which to write AtomVM application |
@@ -343,7 +343,7 @@ You may use the `stm32_flash` task to flash the generated AtomVM packbeam applic
     -s, --stflash  Path to st-flash
     -o, --offset   Offset (default 0x8080000)
 
-The `stm32_flash` will use the `st-flash` tool from the open source (bsd-3 liscensed) [stlink](https://github.com/stlink-org/stlink) suite of stm32 utilites to flash the STM32 device. This tool is available on [github](https://github.com/stlink-org/stlink), and in many package managers.
+The `stm32_flash` will use the `st-flash` tool from the open source (bsd-3 licensed) [stlink](https://github.com/stlink-org/stlink) suite of stm32 utilities to flash the STM32 device. This tool is available on [github](https://github.com/stlink-org/stlink), and in many package managers.
 
 By default, the `stm32_flash` task will assume the `st-flash` command is available on the user's executable path.  Alternatively, you may specify the full path to the `st-flash` command via the `-s` (or `--stflash`) option
 
@@ -452,10 +452,12 @@ Example:
 
 Alternatively, the following environment variables may be used to control the above settings:
 
-* `ATOMVM_REBAR3_PLUGIN_PICO_MOUNT_PATH`
-* `ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV`
+* `ATOMVM_REBAR3_PLUGIN_PICO_MOUNT_PATH` | `ATOMVM_PICO_MOUNT_PATH`
+* `ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV` | `ATOMVM_PICO_RESET_DEV`
 
 Any setting specified on the command line take precedence over entries in `rebar.config`, which in turn take precedence over environment variable settings, which in turn take precedence over the default values specified above.
+
+> Note the setting `ATOMVM_REBAR3_PLUGIN_PICO_MOUNT_PATH` and `ATOMVM_REBAR3_PLUGIN_PICO_RESET_PATH` take precedence, but `ATOMVM_PICO_MOUNT_PATH` and `ATOMVM_PICO_RESET_DEV` are also honoured as a fallback, so that the same environment setting can be shared with the [ExAtomVM](https://github.com/atomvm/exatomvm) `mix` plugin.
 
 The `pico_flash` task depends on the `uf2create` task (which in turn depends on the `packbeam`  task), so the so the application will be packed and re-formatted if any changes have been made to dependencies.
 
@@ -467,27 +469,44 @@ The `uf2create` task is used to generated an uf2 binary suitable for running on 
 
     Use this plugin to create Raspberry Pico uf2 files from an AtomVM packbeam file.
 
-    Usage: rebar3 atomvm uf2create [-o <output>] [-s <start>] [-i <input>]
+    Usage: rebar3 atomvm uf2create [-f <family_id>] [-o <output>]
+                               [-s <start>] [-i <input>]
 
-    -o, --output  Output path/name
-    -s, --start   Start address for the uf2 binary (default 0x10180000)
-    -i, --input   Input avm file to convert to uf2
+      -f, --family_id  Flavor of uf2 file to create (default rp2040)
+      -o, --output      Output path/name
+      -s, --start       Start address for the uf2 binary (default 0x10180000)
+      -i, --input       Input avm file to convert to uf2
 
 It should not be necessary to use this tool before using `pico_flash`, unless you have built a custom VM that requires changing the start address of the uf2 binary. If the application has not been compiled, or packed with packbeam, these steps will be run first using the default settings for `packbeam`.
+
+The following table enumerates the valid `family_id` options:
+
+| Key         | Description |
+|-------------|-------------|
+| `rp2040`    | Original Raspberry Pi Pico and Pico-W |
+| `rp2035`    | Raspberry Pi Pico 2 |
+| `data`      | Raspberry Pi Pico 2 |
+| `universal` | Universal format for both `rp2040` and `rp2035` |
+
+> Note the convenience of universal uf2 binaries comes with the expense of being twice the size, as both versions are included in the universal uf2.
 
 The following table enumerates the properties that may be defined in your project's `rebar.config` file for this task.  Use `uf2create` as the key for any properties defined for this task.
 
 | Key | Type | Description |
 |-----|------|-------------|
 | `start` | `string()` | Start address for the uf2 binary |
+| `family_id` | `string()` | The family\_id or flavor of uf2 to build |
 
 Example:
 
-    {atomvm_rebar3_plugin, [{uf2create, [{start, "0x10180000"}]}]}.
+    {atomvm_rebar3_plugin, [{uf2create, [{start, "0x10180000"},{family_id,universal}]}]}.
 
 Alternatively, the following environment variables may be used to control the above settings:
 
-* `ATOMVM_REBAR3_PLUGIN_UF2CREATE_START`
+* `ATOMVM_REBAR3_PLUGIN_UF2CREATE_START` | `ATOMVM_PICO_APP_START`
+* `ATOMVM_REBAR3_PLUGIN_UF2_FAMILY` | `ATOMVM_PICO_UF2_FAMILY`
+
+> Note the settings `ATOMVM_REBAR3_PLUGIN_UF2CREATE_START` and `ATOMVM_REBAR3_PLUGIN_UF2_FAMILY` take precedence, but `ATOMVM_PICO_APP_START` and`ATOMVM_PICO_UF2_FAMILY`  will also be used, if set, so that the same environment setting can be shared with the [ExAtomVM](https://github.com/atomvm/exatomvm) `mix` plugin.
 
 Any setting specified on the command line take precedence over entries in `rebar.config`, which in turn take precedence over environment variable settings, which in turn take precedence over the default values specified above.
 
@@ -495,7 +514,7 @@ The `uf2create` task depends on the `packbeam` task, so the packbeam file will g
 
 ### The `version` task
 
-use the `version` task to print the current verison of the [`atomvm_rebar3_plugin`](https://atomvm.github.io/atomvm_rebar3_plugin) to the console.
+use the `version` task to print the current version of the [`atomvm_rebar3_plugin`](https://atomvm.github.io/atomvm_rebar3_plugin) to the console.
 
     shell$ rebar3 atomvm version
     0.7.3
