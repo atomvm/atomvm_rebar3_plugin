@@ -13,12 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.4] (unreleased)
 
+### Added
+
 - Added support for the `--application` (or `-a`) option to support AtomVM OTP applications.
 
 ### Changed
 
 - Using the `-s init` option is still supported but deprecated.  Use the `--application` (or `-a`) option to generate OTP applications using AtomVM.
 - Replace `atomvm_uf2create_provider` uf2 creation code with [upstream `uf2tool`](https://github.com/pguyot/uf2tool)
+- Updated default offset for esp32 devices to match new offset (for unrelesed AtomVM release-0.7)
 
 ## [0.7.3] (2023.11.25)
 

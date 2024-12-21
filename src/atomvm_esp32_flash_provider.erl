@@ -32,7 +32,7 @@
     {chip, $c, "chip", string, "ESP chip (default auto)"},
     {port, $p, "port", string, "Device port (default /dev/ttyUSB0)"},
     {baud, $b, "baud", integer, "Baud rate (default 115200)"},
-    {offset, $o, "offset", string, "Offset (default 0x210000)"}
+    {offset, $o, "offset", string, "Offset (default 0x2D0000)"}
 ]).
 
 -define(DEFAULT_OPTS, #{
@@ -40,7 +40,7 @@
     chip => "auto",
     port => "/dev/ttyUSB0",
     baud => 115200,
-    offset => "0x210000"
+    offset => "0x2D0000"
 }).
 
 %%
