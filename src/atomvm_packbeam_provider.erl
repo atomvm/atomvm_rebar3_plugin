@@ -39,7 +39,7 @@
 ]).
 
 -define(DEFAULT_OPTS, #{
-    external_avms => [],
+    external => [],
     force => false,
     prune => false,
     start => undefined,
@@ -108,7 +108,7 @@ do(State) ->
         ok = do_packbeam(
             rebar_state:project_apps(State),
             lists:usort(rebar_state:all_deps(State)),
-            maps:get(external_avms, Opts),
+            maps:get(external, Opts),
             maps:get(prune, Opts),
             maps:get(force, Opts),
             get_start_module(Opts),
@@ -153,13 +153,13 @@ squash_external_avm({external, AVMPath}, Accum) ->
     StrippedPath = string:strip(AVMPath, both),
     case filelib:is_file(StrippedPath) of
         true ->
-            case proplists:get_value(external_avms, Accum) of
+            case proplists:get_value(external, Accum) of
                 undefined ->
-                    [{external_avms, [StrippedPath]} | Accum];
+                    [{external, [StrippedPath]} | Accum];
                 OtherAVMs ->
                     [
-                        {external_avms, [StrippedPath | OtherAVMs]}
-                        | proplists:delete(external_avms, Accum)
+                        {external, [StrippedPath | OtherAVMs]}
+                        | proplists:delete(external, Accum)
                     ]
             end;
         _ ->
