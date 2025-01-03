@@ -150,7 +150,7 @@ get_opts(State) ->
 
 %% @private
 squash_external_avm({external, AVMPath}, Accum) ->
-    StrippedPath = string:strip(AVMPath, both),
+    StrippedPath = filename:absname(string:strip(AVMPath, both)),
     case filelib:is_file(StrippedPath) of
         true ->
             case proplists:get_value(external_avms, Accum) of
