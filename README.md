@@ -390,7 +390,10 @@ The `stm32_flash` task depends on the `packbeam` task, so the packbeam file will
 
 #### Flashing an application to a pico (rp2040) device
 
-You may use the `pico_flash` task to copy the generated AtomVM packbeam application in uf2 format to the flash storage on an Pico device connected to usb. It is not necessary to push the `BOOTSEL` button while plugging in the Pico to usb, instead provide the path of the device to reset. On Linux this is typically `/dev/ttyACM0` (the same device used to monitor serial), on MacOS it is a cu.usbmodem device matching `/dev/cu.usbmodem14*` (not the /dev/tty.usbmodem14___ device used for serial monitoring).
+You may use the `pico_flash` task to copy the generated AtomVM packbeam application in uf2 format to the flash storage on an Pico device connected to usb. It is not necessary to push the `BOOTSEL` button while plugging in the Pico to usb, instead provide the path of the device to reset. On Linux this is typically `/dev/ttyACM0` (the same device used to monitor serial), on MacOS it is a cu.usbmodem device matching `/dev/cu.usbmodem14*` (not the /dev/tty.usbmodem14___ device used for serial monitoring). It is highly recommended
+that `picotool` is installed in your PATH. If it is found in the PATH the automatic `BOOTSEL` and mode can be activated even if you have an active terminal monitor (tmux, minicom, or screen) in another terminal it will
+be disconnected automatically. With `picotool` in your PATH the device has a higher success rate of resetting and entering `application` mode after flashing. Without `picotool` some small applications do not always
+trigger a reset into `application` mode after flashing with `rebar3 atomvm pico_flash`.
 
     shell$ rebar3 help atomvm pico_flash
 
@@ -403,7 +406,7 @@ You may use the `pico_flash` task to copy the generated AtomVM packbeam applicat
     -r, --reset  Path to serial device to reset before flashing (Defaults
                 Linux: /dev/ttyACM0, MacOS: /dev/cu.usbmodem14*)
 
-The `pico_flash` task depends on the `uf2create` task which in turn depends on `packbeam`, so in most cases it is not necessary to execute either of those tasks if the default settings are used, as any changes to modules in the project will get rebuilt before being flashed to the device.
+The `pico_flash` task depends on the `uf2create` task which in turn depends on the `packbeam` task, so in most cases it is not necessary to execute either of those tasks if the default settings are used, as any changes to modules in the project will get rebuilt before being flashed to the device.
 
     shell$ rebar3 atomvm pico_flash
     ===> Fetching atomvm_rebar3_plugin v0.7.3
