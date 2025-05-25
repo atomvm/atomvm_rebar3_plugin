@@ -11,14 +11,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.4] (unreleased)
+## [0.7.4] (2024.06.06)
 
+### Added
 - Added support for the `--application` (or `-a`) option to support AtomVM OTP applications.
+- Support for OTP 28 (in updated atomvm_packeam 0.7.4)
+
+### Fixed
+- Fixed the `rebar3 new atomvm_app`  template rebar.config file to use the provided app name for the start module.
 
 ### Changed
 
 - Using the `-s init` option is still supported but deprecated.  Use the `--application` (or `-a`) option to generate OTP applications using AtomVM.
 - Replace `atomvm_uf2create_provider` uf2 creation code with [upstream `uf2tool`](https://github.com/pguyot/uf2tool)
+- `pico_flash` task now uses picotool to reset the rp2040 device if a serial monitor is attached.
+- Update `atomvm_packbeam` dependency to 0.7.4.
 
 ## [0.7.3] (2023.11.25)
 
