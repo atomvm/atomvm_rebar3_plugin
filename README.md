@@ -63,6 +63,7 @@ The [`rebar3`](https://rebar3.org) plugin provides the following tasks under the
 * `pico_flash`  Flash "packed" uf2 files to RP2040 (RPi Pico) devices by copying to FATfs.
 * `version`  Print the version of the [`atomvm_rebar3_plugin`](https://atomvm.github.io/atomvm_rebar3_plugin) to the console.
 * `bootstrap`  Compile Erlang files that `rebar3` otherwise cannot compile.  Typically, such files include modules from the OTP `kernel` or `stdlib` application that `rebar3` uses internally for its own implementation.
+* `dialyzer`  Use dialyzer for static analysis of AtomVM applications.
 
 > IMPORTANT!  Some of the above tasks were previously located  under the default [`rebar3`](https://rebar3.org) namespace; however, the commands under the default namespace have been DEPRECATED.  Users will get a  warning message on the console when using deprecated tasks, and any deprecated tasks may be removed in the future without warning.  Be sure to migrate any scripts or code you have to use the `atomvm` namespace.
 
@@ -514,6 +515,39 @@ Alternatively, the following environment variables may be used to control the ab
 Any setting specified on the command line take precedence over entries in `rebar.config`, which in turn take precedence over environment variable settings, which in turn take precedence over the default values specified above.
 
 The `uf2create` task depends on the `packbeam` task, so the packbeam file will get automatically built if any changes have been made to its dependencies.
+
+### The `dialyzer` task
+
+Use the `dialyzer` task to check applications for type discrepancies. To use the example just run:
+
+```shell
+$ rebar3 atomvm dialyzer
+```
+
+This task requires a complete AtomVM installation. This includes the AtomVM binary, the standard atomvmlib libraries, compiled beam files, and the `atomvm`
+launcher script. The `atomvm` launcher script should be in your PATH. This is all taken care of with a MacOS install using MacPorts, or Homebrew.
+Linux users will need to build from source and use the cmake "install" target. If you have "installed" AtomVM to a non-standard location (i.e. /otp/atomvm)
+and the `atomvm` launcher script is not in your PATH you must supply the install location containing the AtomVM libraries using the `--atomvm_root` option
+when using this task. For example:
+
+```
+$ rebar3 atomvm dialyzer --atomvm_root /opt/atomvm
+```
+
+This option may also be supplied in the `atomvm_rebar3_plugin` configuration options in rebar.conf. Example:
+
+```erlang
+    {atomvm_rebar3_plugin, [{dialyzer, [{atomvm_root, "/opt/atomvm"}]}]}.
+```
+
+Options available from the command line, or rebar3.conf are:
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `base_plt_location` |`string()` \| `binary()` | "$HOME/.cache/rebar3" | Location of base PLT |
+| `plt_location` | `string()` \| `binary()` | build profile base directory | Location of application PLT |
+| `plt_prefix` | `string()` | application name | The base name of the application plt |
+| `atomvm_root` | `string()` \| `binary()` | detected | If the `atomvm` launcher script is in PATH this will be detected automatically, otherwise specify the atomvm base directory containing the atomvm libraries |
 
 ### The `version` task
 
