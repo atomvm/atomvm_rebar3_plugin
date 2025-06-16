@@ -27,6 +27,7 @@
 -define(PROVIDERS, [
     atomvm_bootstrap_provider,
     atomvm_packbeam_provider,
+    atomvm_dialyzer_provider,
     atomvm_esp32_flash_provider,
     atomvm_pico_flash_provider,
     atomvm_stm32_flash_provider,
