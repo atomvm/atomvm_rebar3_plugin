@@ -79,11 +79,8 @@ do(State) ->
         {ok, State}
     catch
         C:E:S ->
-            rebar_api:error(
-                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
-                    ?PROVIDER, C, E, S
-                ]
-            ),
+            rebar_api:error("An error (~p) occurred in the ~p task.", [E, ?PROVIDER]),
+            rebar_api:debug("Class=~p Error=~p~nSTACKTRACE:~n~p~n", [C, E, S]),
             {error, E}
     end.
 
@@ -147,7 +144,7 @@ do_dialize(Config, State) ->
             print_warnings(Problems)
     catch
         throw:{dialyzer_error, Reason} ->
-            rebar_api:error("Dialyzer failed! reason: ~p.~n", [Reason])
+            rebar_api:abort("Dialyzer failed! reason: ~p.~n", [Reason])
     end,
     ok.
 
@@ -163,10 +160,10 @@ check_base_plt(Config) ->
         [] ->
             ok;
         _ ->
-            do_build_base_plt(Config)
+            ok = do_build_base_plt(Config)
     catch
         throw:{dialyzer_error, _} ->
-            do_build_base_plt(Config)
+            ok = do_build_base_plt(Config)
     end,
     ok.
 
@@ -175,7 +172,7 @@ base_plt_absname(Config) ->
     Home =
         case os:getenv("HOME") of
             false ->
-                rebar_api:error("Unable to locate users home directory");
+                rebar_api:abort("Unable to locate users home directory", []);
             Path ->
                 string:trim(Path)
         end,
@@ -200,12 +197,11 @@ do_build_base_plt(Config) ->
             ok;
         Failure ->
             print_warnings(Failure),
-            rebar_api:error("Failed to create project plt!~n")
+            rebar_api:abort("Failed to create project plt!~n", [])
     catch
         throw:{dialyzer_error, Error} ->
-            rebar_api:error("Failed to crete plt, error:~p~n", [Error])
-    end,
-    ok.
+            rebar_api:abort("Failed to crete plt, error:~p~n", [Error])
+    end.
 
 % @private
 check_app_plt(Config, State) ->
@@ -216,7 +212,7 @@ check_app_plt(Config, State) ->
             ok
     catch
         throw:{dialyzer_error, _} ->
-            do_build_plt(Config, State)
+            ok = do_build_plt(Config, State)
     end,
     ok.
 
@@ -240,12 +236,11 @@ do_build_plt(Config, State) ->
             ok;
         Failure ->
             print_warnings(Failure),
-            rebar_api:error("Failed to create project plt!~n")
+            rebar_api:abort("Failed to create project plt!~n", [])
     catch
         throw:{dialyzer_error, Error} ->
-            rebar_api:error("Failed to crete plt, error:~p~n", [Error])
-    end,
-    ok.
+            rebar_api:abort("Failed to crete plt, error: ~p~n", [Error])
+    end.
 
 %% @private
 plt_absolute_name(State) ->
@@ -278,7 +273,7 @@ atomvm_install_path() ->
     BinPath =
         case os:find_executable("atomvm") of
             false ->
-                rebar_api:error("Path to AtomVM installation not found!");
+                rebar_api:abort("Path to AtomVM installation not found!", []);
             AtomVM ->
                 AtomVM
         end,
@@ -321,8 +316,7 @@ get_base_beam_path_list(Base) ->
     rebar_api:debug("AtomVM libraries to add to plt: ~p~n", [Libs]),
     case Libs of
         [] ->
-            rebar_api:error("Unable to locate AtomVM beams in path"),
-            {error, no_beams_found};
+            rebar_api:abort("Unable to locate AtomVM beams in path", []);
         Ebins ->
             Ebins
     end.
@@ -348,8 +342,7 @@ app_profile_abs_dir(State) ->
             Prof1 when is_atom(Prof1) ->
                 Prof1;
             Arg ->
-                rebar_api:error("Unable to determine rebar3 profile, got badarg ~p", [Arg]),
-                {error, bad_rebar_profile}
+                rebar_api:abort("Unable to determine rebar3 profile, got badarg ~p", [Arg])
         end,
     WorkDir = filename:absname(filename:join("_build", Profile)),
     ok = filelib:ensure_path(WorkDir),
