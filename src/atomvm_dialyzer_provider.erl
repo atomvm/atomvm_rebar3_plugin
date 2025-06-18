@@ -183,7 +183,7 @@ base_plt_absname(Config) ->
                 string:trim(Path)
         end,
     Base = maps:get(base_plt_location, Config, filename:join(Home, ".cache/rebar3")),
-    Version = string:trim(os:cmd("atomvm -version")),
+    Version = atomvm_version(Config),
     BasePLT = filename:absname_join(filename:absname(Base), "AtomVM-" ++ Version ++ ".plt"),
     rebar_api:debug("Base PLT file: ~p", [BasePLT]),
     string:trim(BasePLT).
@@ -264,7 +264,7 @@ get_base_beam_path(Config) ->
             [] ->
                 default_base_beam_path();
             Base ->
-                get_base_beam_path_list(filename:absname(Base))
+                get_base_beam_path_list(Base)
         end,
     rebar_api:debug("AtomVM beam PATH: ~p", [Path]),
     Path.
@@ -295,10 +295,28 @@ default_base_beam_path() ->
 
 %% @private
 get_base_beam_path_list(Base) ->
+    NotFound = lists:duplicate(length(?LIBS), []),
     Libs =
-        case [filelib:wildcard(Base ++ "/lib/" ++ atom_to_list(Lib) ++ "*/ebin") || Lib <- ?LIBS] of
-            [] ->
-                [filename:join(Base, atom_to_list(Lib2) ++ "/src/beams") || Lib2 <- ?LIBS];
+        case
+            lists:foldl(
+                fun(E, Acc) ->
+                    [filelib:wildcard(Base ++ "/lib/" ++ atom_to_list(E) ++ "*/ebin") | Acc]
+                end,
+                [],
+                ?LIBS
+            )
+        of
+            NotFound ->
+                lists:foldl(
+                    fun(E, Acc) ->
+                        [
+                            filelib:wildcard(Base ++ "/libs/" ++ atom_to_list(E) ++ "*/src/beams")
+                            | Acc
+                        ]
+                    end,
+                    [],
+                    ?LIBS
+                );
             Paths ->
                 Paths
         end,
@@ -310,6 +328,19 @@ get_base_beam_path_list(Base) ->
         Ebins ->
             Ebins
     end.
+
+atomvm_version(Config) ->
+    Base = filename:absname(string:trim(maps:get(atomvm_root, Config))),
+    io:format("DEV_DEBUG: Base = ~p~n", [Base]),
+    Version = case filename:basename(Base) of
+        "build" ->
+            string:trim(os:cmd(filename:absname_join(Base, "src/AtomVM") ++ " -version"));
+        Any ->
+            io:format("DEV_DEBUG: Base end = ~p~n", [Any]),
+            string:trim(os:cmd("atomvm -version"))
+    end,
+    rebar_api:debug("AtomVM version = ~p", [Version]),
+    Version.
 
 % @private
 app_profile_abs_dir(State) ->
