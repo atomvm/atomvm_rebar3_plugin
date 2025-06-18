@@ -155,10 +155,9 @@ do_dialize(Config, State) ->
 check_base_plt(Config) ->
     rebar_api:info("Checking AtomVM base PLT...", []),
     PLT = base_plt_absname(Config),
-    BEAMdir = get_base_beam_path(Config),
     try
         dialyzer:run([
-            {analysis_type, plt_check}, {plts, [PLT]}, {output_plt, PLT}, {files_rec, BEAMdir}
+            {analysis_type, plt_check}, {init_plt, PLT}, {output_plt, PLT}
         ])
     of
         [] ->
