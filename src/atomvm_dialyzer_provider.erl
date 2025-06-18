@@ -126,9 +126,9 @@ do_dialize(Config, State) ->
     PLT = plt_absolute_name(State),
     case dialyzer:plt_info(PLT) of
         {ok, _} ->
-            check_app_plt(Config, State);
+            check_app_plt(State);
         _ ->
-            do_build_plt(Config, State)
+            do_build_plt(State)
     end,
     AppBEAMs = get_app_beam_abspath(State),
     rebar_api:info("Analyzing application with dialyzer...", []),
@@ -204,7 +204,7 @@ do_build_base_plt(Config) ->
     end.
 
 % @private
-check_app_plt(Config, State) ->
+check_app_plt(State) ->
     rebar_api:info("Checking application PLT...", []),
     PLT = plt_absolute_name(State),
     try dialyzer:run([{analysis_type, plt_check}, {plts, [PLT]}]) of
@@ -212,31 +212,25 @@ check_app_plt(Config, State) ->
             ok
     catch
         throw:{dialyzer_error, _} ->
-            ok = do_build_plt(Config, State)
+            ok = do_build_plt(State)
     end,
     ok.
 
 % @private
-do_build_plt(Config, State) ->
+do_build_plt(State) ->
     rebar_api:info("Building application PLT...", []),
     %% build plt
     BEAMdir = string:trim(get_app_beam_abspath(State)),
     PLT = string:trim(plt_absolute_name(State)),
-    BasePLT = base_plt_absname(Config),
     try
         dialyzer:run([
             {analysis_type, plt_build},
-            {init_plt, PLT},
-            {plts, [BasePLT]},
             {output_plt, PLT},
             {files_rec, [BEAMdir]}
         ])
     of
-        [] ->
-            ok;
-        Failure ->
-            print_warnings(Failure),
-            rebar_api:abort("Failed to create project plt!~n", [])
+        _ ->
+            ok
     catch
         throw:{dialyzer_error, Error} ->
             rebar_api:abort("Failed to crete plt, error: ~p~n", [Error])
