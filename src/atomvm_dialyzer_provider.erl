@@ -180,7 +180,7 @@ base_plt_absname(Config) ->
                 string:trim(Path)
         end,
     Base = maps:get(base_plt_location, Config, filename:join(Home, ".cache/rebar3")),
-    [Version, _] = string:split(string:trim(os:cmd("atomvm -version")), "+"),
+    Version = string:trim(os:cmd("atomvm -version")),
     BasePLT = filename:absname_join(filename:absname(Base), "AtomVM-" ++ Version ++ ".plt"),
     rebar_api:debug("Base PLT file: ~p", [BasePLT]),
     string:trim(BasePLT).
