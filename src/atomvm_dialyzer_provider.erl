@@ -72,9 +72,6 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    % no plugins in analysis
-    rebar_paths:unset_paths([plugins], State),
-    rebar_paths:set_paths([deps], State),
     try
         Config = get_opts(State),
         rebar_api:debug("Effective opts for ~p: ~p", [?PROVIDER, Config]),
