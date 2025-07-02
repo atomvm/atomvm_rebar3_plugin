@@ -524,14 +524,22 @@ Use the `dialyzer` task to check applications for type discrepancies. To use the
 $ rebar3 atomvm dialyzer
 ```
 
-This task requires a complete AtomVM installation. This includes the AtomVM binary, the standard atomvmlib libraries, compiled beam files, and the `atomvm`
-launcher script. The `atomvm` launcher script should be in your PATH. This is all taken care of with a MacOS install using MacPorts, or Homebrew.
-Linux users will need to build from source and use the cmake "install" target. If you have "installed" AtomVM to a non-standard location (i.e. /otp/atomvm)
-and the `atomvm` launcher script is not in your PATH you must supply the install location containing the AtomVM libraries using the `--atomvm_root` option
-when using this task. For example:
+The `atomvm` launcher script should be in your PATH. This is taken care of with a MacOS install using MacPorts, or
+Homebrew. Linux users will need to build from source and use the cmake "install" target. If you have installed AtomVM
+to a non-standard location (i.e. /otp/atomvm) and the `atomvm` launcher script is not in your PATH you must supply the
+install location containing the AtomVM libraries using the `--atomvm_root` option when using this task. You may also
+use the path to the build directory used for a generic_unix build of the AtomVM BEAM libraries.
+
+Example for a non-standard instal when `atomvm` launcher is not in PATH:
 
 ```
 $ rebar3 atomvm dialyzer --atomvm_root /opt/atomvm
+```
+
+Example using a development build directory:
+
+```
+$ rebar3 atomvm dialyzer --atomvm_root /home/joe/work/AtomVM/build
 ```
 
 This option may also be supplied in the `atomvm_rebar3_plugin` configuration options in rebar.conf. Example:

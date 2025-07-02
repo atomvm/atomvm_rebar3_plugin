@@ -72,9 +72,6 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    % no plugins in analysis
-    rebar_paths:unset_paths([plugins], State),
-    rebar_paths:set_paths([deps], State),
     try
         Config = get_opts(State),
         rebar_api:debug("Effective opts for ~p: ~p", [?PROVIDER, Config]),
@@ -82,11 +79,8 @@ do(State) ->
         {ok, State}
     catch
         C:E:S ->
-            rebar_api:error(
-                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
-                    ?PROVIDER, C, E, S
-                ]
-            ),
+            rebar_api:error("An error (~p) occurred in the ~p task.", [E, ?PROVIDER]),
+            rebar_api:debug("Class=~p Error=~p~nSTACKTRACE:~n~p~n", [C, E, S]),
             {error, E}
     end.
 
@@ -132,9 +126,9 @@ do_dialize(Config, State) ->
     PLT = plt_absolute_name(State),
     case dialyzer:plt_info(PLT) of
         {ok, _} ->
-            check_app_plt(Config, State);
+            check_app_plt(State);
         _ ->
-            do_build_plt(Config, State)
+            do_build_plt(State)
     end,
     AppBEAMs = get_app_beam_abspath(State),
     rebar_api:info("Analyzing application with dialyzer...", []),
@@ -150,7 +144,7 @@ do_dialize(Config, State) ->
             print_warnings(Problems)
     catch
         throw:{dialyzer_error, Reason} ->
-            rebar_api:error("Dialyzer failed! reason: ~p.~n", [Reason])
+            rebar_api:abort("Dialyzer failed! reason: ~p.~n", [Reason])
     end,
     ok.
 
@@ -158,19 +152,18 @@ do_dialize(Config, State) ->
 check_base_plt(Config) ->
     rebar_api:info("Checking AtomVM base PLT...", []),
     PLT = base_plt_absname(Config),
-    BEAMdir = get_base_beam_path(Config),
     try
         dialyzer:run([
-            {analysis_type, plt_check}, {plts, [PLT]}, {output_plt, PLT}, {files_rec, BEAMdir}
+            {analysis_type, plt_check}, {init_plt, PLT}, {output_plt, PLT}
         ])
     of
         [] ->
             ok;
         _ ->
-            do_build_base_plt(Config)
+            ok = do_build_base_plt(Config)
     catch
         throw:{dialyzer_error, _} ->
-            do_build_base_plt(Config)
+            ok = do_build_base_plt(Config)
     end,
     ok.
 
@@ -179,12 +172,12 @@ base_plt_absname(Config) ->
     Home =
         case os:getenv("HOME") of
             false ->
-                rebar_api:error("Unable to locate users home directory");
+                rebar_api:abort("Unable to locate users home directory", []);
             Path ->
                 string:trim(Path)
         end,
     Base = maps:get(base_plt_location, Config, filename:join(Home, ".cache/rebar3")),
-    [Version, _] = string:split(string:trim(os:cmd("atomvm -version")), "+"),
+    Version = atomvm_version(Config),
     BasePLT = filename:absname_join(filename:absname(Base), "AtomVM-" ++ Version ++ ".plt"),
     rebar_api:debug("Base PLT file: ~p", [BasePLT]),
     string:trim(BasePLT).
@@ -204,15 +197,14 @@ do_build_base_plt(Config) ->
             ok;
         Failure ->
             print_warnings(Failure),
-            rebar_api:error("Failed to create project plt!~n")
+            rebar_api:abort("Failed to create project plt!~n", [])
     catch
         throw:{dialyzer_error, Error} ->
-            rebar_api:error("Failed to crete plt, error:~p~n", [Error])
-    end,
-    ok.
+            rebar_api:abort("Failed to crete plt, error:~p~n", [Error])
+    end.
 
 % @private
-check_app_plt(Config, State) ->
+check_app_plt(State) ->
     rebar_api:info("Checking application PLT...", []),
     PLT = plt_absolute_name(State),
     try dialyzer:run([{analysis_type, plt_check}, {plts, [PLT]}]) of
@@ -220,36 +212,29 @@ check_app_plt(Config, State) ->
             ok
     catch
         throw:{dialyzer_error, _} ->
-            do_build_plt(Config, State)
+            ok = do_build_plt(State)
     end,
     ok.
 
 % @private
-do_build_plt(Config, State) ->
+do_build_plt(State) ->
     rebar_api:info("Building application PLT...", []),
     %% build plt
     BEAMdir = string:trim(get_app_beam_abspath(State)),
     PLT = string:trim(plt_absolute_name(State)),
-    BasePLT = base_plt_absname(Config),
     try
         dialyzer:run([
             {analysis_type, plt_build},
-            {init_plt, PLT},
-            {plts, [BasePLT]},
             {output_plt, PLT},
             {files_rec, [BEAMdir]}
         ])
     of
-        [] ->
-            ok;
-        Failure ->
-            print_warnings(Failure),
-            rebar_api:error("Failed to create project plt!~n")
+        _ ->
+            ok
     catch
         throw:{dialyzer_error, Error} ->
-            rebar_api:error("Failed to crete plt, error:~p~n", [Error])
-    end,
-    ok.
+            rebar_api:abort("Failed to crete plt, error: ~p~n", [Error])
+    end.
 
 %% @private
 plt_absolute_name(State) ->
@@ -265,7 +250,7 @@ get_base_beam_path(Config) ->
             [] ->
                 default_base_beam_path();
             Base ->
-                get_base_beam_path_list(filename:absname(Base))
+                get_base_beam_path_list(Base)
         end,
     rebar_api:debug("AtomVM beam PATH: ~p", [Path]),
     Path.
@@ -282,7 +267,7 @@ atomvm_install_path() ->
     BinPath =
         case os:find_executable("atomvm") of
             false ->
-                rebar_api:error("Path to AtomVM installation not found!");
+                rebar_api:abort("Path to AtomVM installation not found!", []);
             AtomVM ->
                 AtomVM
         end,
@@ -296,21 +281,51 @@ default_base_beam_path() ->
 
 %% @private
 get_base_beam_path_list(Base) ->
+    NotFound = lists:duplicate(length(?LIBS), []),
     Libs =
-        case [filelib:wildcard(Base ++ "/lib/" ++ atom_to_list(Lib) ++ "*/ebin") || Lib <- ?LIBS] of
-            [] ->
-                [filename:join(Base, atom_to_list(Lib2) ++ "/src/beams") || Lib2 <- ?LIBS];
+        case
+            lists:foldl(
+                fun(E, Acc) ->
+                    [filelib:wildcard(Base ++ "/lib/" ++ atom_to_list(E) ++ "*/ebin") | Acc]
+                end,
+                [],
+                ?LIBS
+            )
+        of
+            NotFound ->
+                %% not a standard install, look for source build beams
+                lists:foldl(
+                    fun(E, Acc) ->
+                        [
+                            filelib:wildcard(Base ++ "/libs/" ++ atom_to_list(E) ++ "*/src/beams")
+                            | Acc
+                        ]
+                    end,
+                    [],
+                    ?LIBS
+                );
             Paths ->
                 Paths
         end,
     rebar_api:debug("AtomVM libraries to add to plt: ~p~n", [Libs]),
     case Libs of
         [] ->
-            rebar_api:error("Unable to locate AtomVM beams in path"),
-            {error, no_beams_found};
+            rebar_api:abort("Unable to locate AtomVM beams in path", []);
         Ebins ->
             Ebins
     end.
+
+atomvm_version(Config) ->
+    Base = filename:absname(string:trim(maps:get(atomvm_root, Config, atomvm_install_path()))),
+    Version =
+        case filename:basename(Base) of
+            "build" ->
+                string:trim(os:cmd(filename:absname_join(Base, "src/AtomVM") ++ " -version"));
+            _ ->
+                string:trim(os:cmd("atomvm -version"))
+        end,
+    rebar_api:debug("AtomVM version = ~p", [Version]),
+    Version.
 
 % @private
 app_profile_abs_dir(State) ->
@@ -321,8 +336,7 @@ app_profile_abs_dir(State) ->
             Prof1 when is_atom(Prof1) ->
                 Prof1;
             Arg ->
-                rebar_api:error("Unable to determine rebar3 profile, got badarg ~p", [Arg]),
-                {error, bad_rebar_profile}
+                rebar_api:abort("Unable to determine rebar3 profile, got badarg ~p", [Arg])
         end,
     WorkDir = filename:absname(filename:join("_build", Profile)),
     ok = filelib:ensure_path(WorkDir),
