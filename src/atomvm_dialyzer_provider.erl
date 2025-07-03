@@ -281,36 +281,24 @@ default_base_beam_path() ->
 
 %% @private
 get_base_beam_path_list(Base) ->
-    NotFound = lists:duplicate(length(?LIBS), []),
     Libs =
-        case
-            lists:foldl(
-                fun(E, Acc) ->
-                    [filelib:wildcard(Base ++ "/lib/" ++ atom_to_list(E) ++ "*/ebin") | Acc]
-                end,
-                [],
-                ?LIBS
-            )
-        of
-            NotFound ->
-                %% not a standard install, look for source build beams
-                lists:foldl(
-                    fun(E, Acc) ->
-                        [
-                            filelib:wildcard(Base ++ "/libs/" ++ atom_to_list(E) ++ "*/src/beams")
-                            | Acc
-                        ]
-                    end,
-                    [],
-                    ?LIBS
-                );
-            Paths ->
-                Paths
-        end,
+        lists:foldl(
+            fun(E, Acc) ->
+                [
+                    filelib:wildcard(
+                        Base ++ "/{lib,libs}/" ++ atom_to_list(E) ++ "*/**/{ebin,beams}"
+                    )
+                    | Acc
+                ]
+            end,
+            [],
+            ?LIBS
+        ),
     rebar_api:debug("AtomVM libraries to add to plt: ~p~n", [Libs]),
+    NotFound = lists:duplicate(length(?LIBS), []),
     case Libs of
-        [] ->
-            rebar_api:abort("Unable to locate AtomVM beams in path", []);
+        NotFound ->
+            rebar_api:abort("Unable to locate AtomVM beams", []);
         Ebins ->
             Ebins
     end.
