@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added dialyzer task to simplify running dialyzer on AtomVM applications.
 
+### Changed
+- The `uf2create` task now creates `universal` format uf2 files by default, suitable for both
+rp2040 or rp2350 devices.
+
 ## [0.7.5] (2025.05.27)
 
 ### Fixed

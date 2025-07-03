@@ -30,7 +30,7 @@
 -define(DEPS, [packbeam]).
 -define(OPTS, [
     {family_id, $f, "family_id", string,
-        "Device family or flavor of uf2 file to create (default rp2040)"},
+        "Device family or flavor of uf2 file to create (default universal)"},
     {output, $o, "output", string, "Output path/name"},
     {start, $s, "start", string, "Start address for the uf2 binary (default 0x10180000)"},
     {input, $i, "input", string, "Input avm file to convert to uf2"}
@@ -38,7 +38,7 @@
 
 -define(DEFAULT_OPTS, #{
     start => os:getenv("ATOMVM_PICO_APP_START", "0x10180000"),
-    family_id => os:getenv("ATOMVM_PICO_UF2_FAMILY", rp2040)
+    family_id => os:getenv("ATOMVM_PICO_UF2_FAMILY", universal)
 }).
 
 %%
@@ -84,10 +84,10 @@ do(State) ->
     catch
         C:E:S ->
             rebar_api:error(
-                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
-                    ?PROVIDER, C, E, S
-                ]
+                "An error occurred in the ~p task.  Error=~p",
+                [?PROVIDER, E]
             ),
+            rebar_api:debug("Class=~p, Error=~p~nSTACKTRACE:~n~p~n", [C, E, S]),
             {error, E}
     end.
 
