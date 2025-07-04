@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added dialyzer task to simplify running dialyzer on AtomVM applications.
 - Added support for rp2350 devices to allow for default detection of the device mount path.
+- Added configuration paramenter for setting the path to picotool for the pico_flash task.
 
 ### Changed
 - The `uf2create` task now creates `universal` format uf2 files by default, suitable for both
