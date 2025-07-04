@@ -104,11 +104,11 @@ env_opts() ->
     #{
         path => os:getenv(
             "ATOMVM_REBAR3_PLUGIN_PICO_MOUNT_PATH",
-            get_default_mount()
+            os:getenv("ATOMVM_PICO_MOUNT_PATH", "")
         ),
         reset => os:getenv(
             "ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV",
-            get_reset_base()
+            get_reset_dev()
         )
     }.
 
@@ -123,77 +123,102 @@ get_stty_file_flag() ->
     end.
 
 %% @private
-get_reset_base() ->
+get_reset_dev() ->
     {_Fam, System} = os:type(),
     Base =
         case System of
             linux ->
-                "/dev/ttyACM*";
+                filelib:wildcard("/dev/serial/by-id/usb-Raspberry_Pi_Pico_????????????????-if00");
             darwin ->
-                "/dev/cu.usbmodem14*";
+                Bin = darwin_ioreg:pico_callout_devices(),
+                lists:foldl(fun(Path, Acc) -> [binary_to_list(Path) | Acc] end, [], Bin);
             _Other ->
-                ""
+                []
         end,
     os:getenv("ATOMVM_PICO_RESET_DEV", Base).
 
-%% @private
-get_default_mount() ->
+%%% @private
+find_mounted_pico() ->
     {_Fam, System} = os:type(),
-    Default =
+    Wildcard =
         case System of
             linux ->
-                "/run/media/" ++ os:getenv("USER") ++ "/RPI-RP2";
+                "/run/media/" ++ os:getenv("USER") ++ "/{RPI-RP2,RP2350}";
             darwin ->
-                "/Volumes/RPI-RP2";
+                "/Volumes/{RPI-RP2,RP2350}";
             _Other ->
                 ""
         end,
-    os:getenv("ATOMVM_PICO_MOUNT_PATH", Default).
-
-%% @private
-wait_for_mount(Mount, Count) when Count < 30 ->
-    try
-        case file:read_link_info(Mount) of
-            {ok, #file_info{type = directory} = _Info} ->
-                ok;
-            _ ->
-                timer:sleep(1000),
-                wait_for_mount(Mount, Count + 1)
-        end
-    catch
+    case filelib:wildcard(Wildcard) of
+        [Pico | _] = Path ->
+            rebar_api:debug("Found pico device, using ~p from devices list: ~p", [Pico, Path]),
+            {ok, Pico};
         _ ->
-            timer:sleep(1000),
-            wait_for_mount(Mount, Count + 1)
-    end;
-wait_for_mount(Mount, 30) ->
-    rebar_api:error("Pico not mounted at ~s after 30 seconds. giving up...", [Mount]),
-    erlang:throw(mount_error).
-
-%% @private
-check_pico_mount(Mount) ->
-    try
-        case file:read_link_info(Mount) of
-            {ok, #file_info{type = directory} = _Info} ->
-                rebar_api:debug("Pico mounted at ~s.", [Mount]),
-                ok;
-            _ ->
-                rebar_api:error("Pico not mounted at ~s.", [Mount]),
-                erlang:throw(no_device)
-        end
-    catch
-        _ ->
-            rebar_api:error("Pico not mounted at ~s.", [Mount]),
-            erlang:throw(no_device)
+            not_found
     end.
 
 %% @private
-needs_reset(ResetBase) ->
-    case filelib:wildcard(ResetBase) of
+wait_for_mount(Mount, Count) when Count < 30 ->
+    case Mount of
+        "" ->
+            case find_mounted_pico() of
+                not_found ->
+                    timer:sleep(1000),
+                    wait_for_mount(Mount, Count + 1);
+                {ok, Pico} ->
+                    case file:read_link_info(Pico) of
+                        {ok, #file_info{type = directory} = _Info} ->
+                            {ok, Pico};
+                        Err ->
+                            rebar_api:abort("Pico mount point is not a directory (~p)", [Err])
+                    end
+            end;
+        Path ->
+            case file:read_link_info(Path) of
+                {ok, #file_info{type = directory} = _Info} ->
+                    {ok, Path};
+                _ ->
+                    timer:sleep(1000),
+                    wait_for_mount(Mount, Count + 1)
+            end
+    end;
+wait_for_mount(_Mount, 30) ->
+    rebar_api:abort("Pico not mounted after 30 seconds. giving up...", []).
+
+%% @private
+get_pico_mount(Mount) ->
+    case Mount of
+        "" ->
+            case find_mounted_pico() of
+                not_found ->
+                    rebar_api:info("Waiting for an RP2 device to mount...", []),
+                    wait_for_mount(Mount, 0);
+                {ok, Pico} ->
+                    {ok, Pico}
+            end;
+        Path ->
+            case file:read_link_info(Path) of
+                {ok, #file_info{type = directory} = _Info} ->
+                    rebar_api:debug("Pico mounted at ~s.", [Mount]),
+                    {ok, Path};
+                _ ->
+                    rebar_api:info("Waiting for the device at path ~s to mount...", [
+                        string:trim(Mount)
+                    ]),
+                    wait_for_mount(Mount, 0)
+            end
+    end.
+
+%% @private
+needs_reset(ResetDev) ->
+    case ResetDev of
         [] ->
             false;
         [ResetPort | _T] ->
             case file:read_link_info(ResetPort) of
                 {ok, #file_info{type = device} = _Info} ->
+                    {true, ResetPort};
+                {ok, #file_info{type = symlink} = _Info} ->
                     {true, ResetPort};
                 _ ->
                     false
@@ -208,7 +233,7 @@ do_reset(ResetPort) ->
     BootselMode = lists:join(" ", [
         "stty", Flag, ResetPort, "1200"
     ]),
-    rebar_api:debug("Resetting device at path ~s", [ResetPort]),
+    rebar_api:info("Resetting device at path ~s", [ResetPort]),
     ResetStatus = os:cmd(BootselMode),
     case ResetStatus of
         "" ->
@@ -259,25 +284,23 @@ get_uf2_appname(ProjectApps) ->
     binary_to_list(rebar_app_info:name(App)).
 
 %% @private
-do_flash(ProjectApps, PicoPath, ResetBase) ->
-    case needs_reset(ResetBase) of
+do_flash(ProjectApps, PicoPath, ResetDev) ->
+    case needs_reset(ResetDev) of
         false ->
-            rebar_api:debug("No Pico found matching ~s.", [ResetBase]),
+            rebar_api:debug("No Pico reset device found matching ~s.", [ResetDev]),
             ok;
         {true, ResetPort} ->
             rebar_api:debug("Pico at ~s needs reset...", [ResetPort]),
             do_reset(ResetPort),
-            rebar_api:info("Waiting for the device at path ~s to settle and mount...", [
-                string:trim(PicoPath)
-            ]),
+            rebar_api:info("Waiting for the device at path ~s to settle and mount...", [PicoPath]),
             wait_for_mount(PicoPath, 0)
     end,
-    check_pico_mount(PicoPath),
+    {ok, Path} = get_pico_mount(PicoPath),
     TargetUF2 = get_uf2_file(ProjectApps),
     App = get_uf2_appname(ProjectApps),
     File = App ++ ".uf2",
-    Dest = filename:join(PicoPath, File),
-    rebar_api:info("Copying ~s", [File]),
+    Dest = filename:join(Path, File),
+    rebar_api:info("Copying ~s to ~s", [File, Path]),
     case file:copy(TargetUF2, Dest) of
         {ok, _Size} ->
             ok;
@@ -285,5 +308,5 @@ do_flash(ProjectApps, PicoPath, ResetBase) ->
             rebar_api:error("Failed to copy application file ~s to pico: ~s", [File, CopyError]),
             erlang:throw(picoflash_copy_error)
     end,
-    rebar_api:info("Successfully loaded ~s application to device at path ~s.", [App, PicoPath]),
+    rebar_api:info("Successfully loaded ~s application to the device.", [App]),
     ok.
