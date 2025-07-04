@@ -79,8 +79,7 @@ do(State) ->
         {ok, State}
     catch
         _C:E:_S ->
-            rebar_api:error("An error occurred in the ~p task.  Error=~p~n", [?PROVIDER, E]),
-            {error, E}
+            rebar_api:abort("An error occurred in the ~p task.  Error=~p~n", [?PROVIDER, E])
     end.
 
 -spec format_error(any()) -> iolist().
@@ -248,11 +247,10 @@ do_reset(ResetPort, Picotool) ->
         Error ->
             case Picotool of
                 false ->
-                    rebar_api:error(
+                    rebar_api:abort(
                         "Warning: ~s~nUnable to locate 'picotool', close the serial monitor before flashing, or install picotool for automatic disconnect and BOOTSEL mode.",
                         [Error]
-                    ),
-                    erlang:throw(reset_error);
+                    );
                 RP2tool ->
                     rebar_api:warn(
                         "Warning: ~s~nFor faster flashing remember to disconnect serial monitor first.",
@@ -271,8 +269,7 @@ do_reset(ResetPort, Picotool) ->
                         "The device was asked to reboot into BOOTSEL mode." ->
                             ok;
                         BootError ->
-                            rebar_api:error("Failed to prepare pico for flashing: ~s", [BootError]),
-                            erlang:throw(picoflash_reboot_error)
+                            rebar_api:abort("Failed to prepare pico for flashing: ~s", [BootError])
                     end
             end
     end.
@@ -312,8 +309,7 @@ do_flash(ProjectApps, PicoPath, ResetDev, Picotool) ->
         {ok, _Size} ->
             ok;
         CopyError ->
-            rebar_api:error("Failed to copy application file ~s to pico: ~s", [File, CopyError]),
-            erlang:throw(picoflash_copy_error)
+            rebar_api:abort("Failed to copy application file ~s to pico: ~s", [File, CopyError])
     end,
     rebar_api:info("Successfully loaded ~s application to the device.", [App]),
     ok.
