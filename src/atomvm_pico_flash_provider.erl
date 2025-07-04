@@ -34,7 +34,8 @@
     {path, $p, "path", string,
         "Path to pico device (Defaults Linux: /run/media/${USER}/RPI-RP2, MacOS: /Volumes/RPI-RP2)"},
     {reset, $r, "reset", string,
-        "Path to serial device to reset before flashing (Defaults Linux: /dev/ttyACM0, MacOS: /dev/cu.usbmodem14*)"}
+        "Path to serial device to reset before flashing (Defaults Linux: /dev/ttyACM0, MacOS: /dev/cu.usbmodem14*)"},
+    {picotool, $t, "picotool", string, "Path to picotool utility (Default is to search in PATH)"}
 ]).
 
 %%
@@ -72,7 +73,8 @@ do(State) ->
         ok = do_flash(
             rebar_state:project_apps(State),
             maps:get(path, Opts),
-            maps:get(reset, Opts)
+            maps:get(reset, Opts),
+            maps:get(picotool, Opts)
         ),
         {ok, State}
     catch
@@ -109,8 +111,21 @@ env_opts() ->
         reset => os:getenv(
             "ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV",
             get_reset_dev()
+        ),
+        picotool => os:getenv(
+            "ATOMVM_REBAR3_PLUGIN_PICOTOOL",
+            os:getenv("ATOMVM_PICOTOOL", find_picotool())
         )
     }.
+
+%% @private
+find_picotool() ->
+    case os:find_executable("picotool") of
+        false ->
+            "";
+        Picotool ->
+            Picotool
+    end.
 
 %% @private
 get_stty_file_flag() ->
@@ -228,7 +243,7 @@ needs_reset(ResetDev) ->
     end.
 
 %% @private
-do_reset(ResetPort) ->
+do_reset(ResetPort, Picotool) ->
     Flag = get_stty_file_flag(),
     BootselMode = lists:join(" ", [
         "stty", Flag, ResetPort, "1200"
@@ -239,20 +254,19 @@ do_reset(ResetPort) ->
         "" ->
             ok;
         Error ->
-            case os:find_executable(picotool) of
-                false ->
-                    rebar_api:error(
-                        "Warning: ~s~nUnable to locate 'picotool', close the serial monitor before flashing, or install picotool for automatic disconnect and BOOTSEL mode.",
+            case Picotool of
+                "" ->
+                    rebar_api:abort(
+                        "Warning: ~s~nUnable to locate 'picotool', close the serial monitor before flashing, or supply the path to picotool if it is not installed in your PATH for automatic disconnect and BOOTSEL mode.",
                         [Error]
-                    ),
-                    erlang:throw(reset_error);
-                Picotool ->
+                    );
+                RP2tool ->
                     rebar_api:warn(
                         "Warning: ~s~nFor faster flashing remember to disconnect serial monitor first.",
                         [Error]
                     ),
                     DevReset = lists:join(" ", [
-                        Picotool, "reboot", "-f", "-u"
+                        RP2tool, "reboot", "-f", "-u"
                     ]),
                     rebar_api:warn("Disconnecting serial monitor with: `~s' in 5 seconds...", [
                         DevReset
@@ -284,14 +298,14 @@ get_uf2_appname(ProjectApps) ->
     binary_to_list(rebar_app_info:name(App)).
 
 %% @private
-do_flash(ProjectApps, PicoPath, ResetDev) ->
+do_flash(ProjectApps, PicoPath, ResetDev, Picotool) ->
     case needs_reset(ResetDev) of
         false ->
             rebar_api:debug("No Pico reset device found matching ~s.", [ResetDev]),
             ok;
         {true, ResetPort} ->
             rebar_api:debug("Pico at ~s needs reset...", [ResetPort]),
-            do_reset(ResetPort),
+            do_reset(ResetPort, Picotool),
             rebar_api:info("Waiting for the device at path ~s to settle and mount...", [PicoPath]),
             wait_for_mount(PicoPath, 0)
     end,

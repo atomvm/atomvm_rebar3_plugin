@@ -449,6 +449,7 @@ The following table enumerates the properties that may be defined in your projec
 |-----|------|-------------|
 | `path` | `string()` | Path to pico device |
 | `reset` | `string()` | Path to serial device to reset before flashing |
+| `picotool` | `string()` | Path to picotool executable |
 
 Example:
 
@@ -458,6 +459,7 @@ Alternatively, the following environment variables may be used to control the ab
 
 * `ATOMVM_REBAR3_PLUGIN_PICO_MOUNT_PATH` | `ATOMVM_PICO_MOUNT_PATH`
 * `ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV` | `ATOMVM_PICO_RESET_DEV`
+* `ATOMVM_REBAR3_PLUGIN_PICOTOOL` | `ATOMVM_PICOTOOL`
 
 Any setting specified on the command line take precedence over entries in `rebar.config`, which in turn take precedence over environment variable settings, which in turn take precedence over the default values specified above.
 
