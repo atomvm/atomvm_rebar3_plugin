@@ -87,10 +87,10 @@ do(State) ->
     catch
         C:E:S ->
             rebar_api:error(
-                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
-                    ?PROVIDER, C, E, S
-                ]
+                "An error occurred in the ~p task.  Error=~p",
+                [?PROVIDER, E]
             ),
+            rebar_api:debug("Class=~p, Error=~p~nSTACKTRACE:~n~p~n", [C, E, S]),
             {error, E}
     end.
 
