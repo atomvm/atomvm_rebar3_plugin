@@ -31,6 +31,7 @@
     file_exists/1,
     find_avm_element_by_name/2,
     get_avm_elements/1,
+    expect_no_artifacts/1,
     make_path/1,
     tick/0
 ]).
@@ -57,6 +58,10 @@ run_tests(Opts) ->
 
     io:put_chars("esp32_flash_tests: "),
     ok = esp32_flash_tests:run(Opts),
+    io:put_chars("\n"),
+
+    io:put_chars("esp_part_dump_tests: "),
+    ok = esp_part_dump_tests:run(Opts),
     io:put_chars("\n"),
 
     io:put_chars("stm32_flash_tests: "),
@@ -103,6 +108,26 @@ file_exists(Path) ->
             {error, {expected, Path, to_exist}}
     end.
 
+%% The flash tasks must remove every temporary artifact they create, on both the
+%% success and the anticipated-failure paths.  Leftovers are silent breakage, so
+%% assert on them instead of relying on a clean working copy.
+expect_no_artifacts(AppDir) ->
+    case file:list_dir(AppDir) of
+        {ok, Entries} ->
+            case artifact_leftovers(Entries) of
+                [] ->
+                    ok;
+                Leftovers ->
+                    {error, {expected, "no temporary artifacts", found, Leftovers}}
+            end;
+        {error, _} = Error ->
+            Error
+    end.
+
+%% @private
+artifact_leftovers(Entries) ->
+    [Entry || Entry <- Entries, lists:prefix("atomvm_esp32_flash.", Entry)].
+
 create_rebar3_cmd(AppPath, Task, Opts, Env) ->
     io_lib:format("cd ~s && ~s rebar3 atomvm ~p ~s", [AppPath, make_env(Env), Task, make_opts(Opts)]).
 
@@ -143,7 +168,7 @@ execute_cmd(Cmd, Opts) ->
 debug(Msg, Opts) ->
     case maps:get(debug, Opts, false) of
         true ->
-            io:format("~s~n", [Msg]);
+            io:format("~p~n", [Msg]);
         _ ->
             ok
     end.
