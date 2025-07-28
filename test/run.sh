@@ -24,6 +24,14 @@ unset ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV
 
 unset ATOMVM_REBAR3_PLUGIN_UF2CREATE_START
 
+export ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_ESPTOOL="${test_dir}/scripts/esptool.sh"
+export ATOMVM_REBAR3_PLUGIN_ESP32_PARTITION_DUMP="${test_dir}/scripts/partition.bin"
+export ATOMVM_REBAR3_PLUGIN_ESP32_EX_PARTITION_DUMP="${test_dir}/scripts/partition_elixir.bin"
+
 cd "${test_dir}"
 rebar3 escriptize
 ./_build/default/bin/driver -r "$(pwd)" "$@"
+
+unset ATOMVM_REBAR3_PLUGIN_ESP32_PARTITION_DUMP
+unset ATOMVM_REBAR3_PLUGIN_ESP32_EX_PARTITION_DUMP
+unset ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_ESPTOOL

@@ -143,7 +143,7 @@ execute_cmd(Cmd, Opts) ->
 debug(Msg, Opts) ->
     case maps:get(debug, Opts, false) of
         true ->
-            io:format("~s~n", [Msg]);
+            io:format("~p~n", [Msg]);
         _ ->
             ok
     end.
