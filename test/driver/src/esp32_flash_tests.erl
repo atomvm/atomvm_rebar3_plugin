@@ -23,15 +23,16 @@
 
 run(Opts) ->
     ok = test_flags(Opts),
+    ok = test_elixir_partition_table(Opts),
     ok = test_env_overrides(Opts),
     ok = test_rebar_overrides(Opts),
+    ok = test_errors(Opts),
     ok.
 
 %% @private
 test_flags(Opts) ->
     test_flags(Opts, [], [
         {"--chip", "auto"},
-        {"--port", "/dev/ttyUSB0"},
         {"--baud", "115200"},
         {"--offset", "0x210000"}
     ]),
@@ -40,16 +41,28 @@ test_flags(Opts) ->
         Opts,
         [
             {"-c", "esp32c3"},
-            {"-p", "/dev/tty.usbserial-0001"}
+            {"-p", "/dev/tty.usbserial-0001"},
+            {"-b", "921600"}
         ],
         [
             {"--chip", "esp32c3"},
-            {"--port", "tty.usbserial-0001"},
-            {"--baud", "115200"},
+            {"--port", "/dev/tty.usbserial-0001"},
+            {"--baud", "921600"},
             {"--offset", "0x210000"}
         ]
     ),
 
+    test_flags(
+        Opts,
+        [
+            {"-a", "app1.avm"}
+        ],
+        [
+            {"--chip", "auto"},
+            {"--baud", "115200"},
+            {"--offset", "0x310000"}
+        ]
+    ),
     ok.
 
 %% @private
@@ -67,7 +80,23 @@ test_flags(Opts, Flags, FlagExpectList) ->
         end,
         FlagExpectList
     ),
-    ok = test:expect_contains("_build/default/lib/myapp.avm", Output),
+    ok = test:expect_contains("Flashing myapp.avm to device.", Output),
+
+    test:tick().
+
+test_elixir_partition_table(Opts) ->
+    AppsDir = maps:get(apps_dir, Opts),
+    AppDir = test:make_path([AppsDir, "myapp"]),
+    Offset = 16#250000,
+
+    Cmd = create_esp32_flash_cmd(AppDir, [], [
+        {"ATOMVM_REBAR3_PLUGIN_PARTITION_DATA",
+            os:getenv("ATOMVM_REBAR3_PLUGIN_ESP32_EX_PARTITION_DUMP")}
+    ]),
+    Output = test:execute_cmd(Cmd, Opts),
+    test:debug(Output, Opts),
+
+    ok = test:expect_contains(io_lib:format("~i", [Offset]), Output),
 
     test:tick().
 
@@ -124,5 +153,65 @@ test_rebar_overrides(Opts, Flags, EnvVar, Value, Flag, ExpectedValue) ->
     test:tick().
 
 %% @private
+test_errors(Opts) ->
+    test_errors(
+        Opts,
+        [
+            {"-a", "fake"}
+        ],
+        "The partition fake was not fount on device partition table!"
+    ),
+
+    %% overrides the script that emulates dumping the partition data
+    %% simulating execution when no device is attached.
+    test_errors(
+        Opts,
+        [
+            {"--esptool", "echo"}
+        ],
+        "No ESP32 device attached!"
+    ),
+
+    test_errors(
+        Opts,
+        [
+            {"--app_partition", "app1.avm"},
+            {"--offset", "0x210000"}
+        ],
+        "The configured offset 0x210000 does not match the partition table on the device (0x310000)."
+    ),
+
+    test_errors(
+        Opts,
+        [
+            {"-a", "bad1"}
+        ],
+        "The partition bad1 was found, but used invalid subtype 0x06."
+    ),
+
+    test_errors(
+        Opts,
+        [
+            {"-a", "bad2"}
+        ],
+        "The partition bad2 was found, but partition data is invalid."
+    ),
+
+    ok.
+
+%% @private
+test_errors(Opts, Flags, Expect) ->
+    AppsDir = maps:get(apps_dir, Opts),
+    AppDir = test:make_path([AppsDir, "myapp"]),
+
+    Cmd = create_esp32_flash_cmd(AppDir, Flags, []),
+    Output = test:execute_cmd(Cmd, Opts),
+    test:debug(Output, Opts),
+
+    ok = test:expect_contains(Expect, Output),
+
+    test:tick().
+
+%% @private
 create_esp32_flash_cmd(AppDir, Opts, Env) ->
-    test:create_rebar3_cmd(AppDir, esp32_flash, [{"-e", "echo"} | Opts], Env).
+    test:create_rebar3_cmd(AppDir, esp32_flash, Opts, Env).
