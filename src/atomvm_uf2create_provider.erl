@@ -38,7 +38,7 @@
 
 -define(DEFAULT_OPTS, #{
     start => os:getenv("ATOMVM_PICO_APP_START", "0x10180000"),
-    family_id => os:getenv("ATOMVM_PICO_UF2_FAMILY", universal)
+    family_id => os:getenv("ATOMVM_PICO_UF2_FAMILY", "universal")
 }).
 
 %%
