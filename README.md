@@ -7,6 +7,11 @@
 
 A [`rebar3`](https://rebar3.org) plugin for simplifying development of Erlang applications targeted for the [AtomVM](http://github.com/atomvm/AtomVM) Erlang abstract machine.
 
+[Releases](https://hex.pm/packages/atomvm_rebar3_plugin) and
+[accompanying documentation](https://hexdocs.pm/atomvm_rebar3_plugin/readme.html) are available on
+[hex.pm](https://hex.pm). The documentation for the current master branch is always available from
+the [`atomvm_rebar3_plugin` GitHub pages](https://atomvm.github.io/atomvm_rebar3_plugin/readme.html).
+
 ## Quick Start
 
 Create or edit the `$HOME/.config/rebar3/rebar.config` file to include the `atomvm_rebar3_plugin` [`rebar3`](https://rebar3.org) plugin:
