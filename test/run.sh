@@ -24,6 +24,10 @@ unset ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV
 
 unset ATOMVM_REBAR3_PLUGIN_UF2CREATE_START
 
+export ATOMVM_REBAR3_TEST_MODE="true"
+
 cd "${test_dir}"
 rebar3 escriptize
 ./_build/default/bin/driver -r "$(pwd)" "$@"
+
+unset ATOMVM_REBAR3_TEST_MODE
