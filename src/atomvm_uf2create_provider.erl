@@ -153,9 +153,9 @@ validate_flavor(Flavor) ->
             rp2040;
         "rp2040" ->
             rp2040;
-        rp2035 ->
+        rp2350 ->
             data;
-        "rp2035" ->
+        "rp2350" ->
             data;
         data ->
             data;
