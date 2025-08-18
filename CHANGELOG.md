@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.6] (unreleased)
 
+### Changed
+- Update dependancy version of atomvm_packbeam to 0.7.5
+
 ### Added
 - Added dialyzer task to simplify running dialyzer on AtomVM applications.
 - Added support for rp2350 devices to allow for default detection of the device mount path.
