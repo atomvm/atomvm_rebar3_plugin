@@ -119,11 +119,17 @@ env_opts() ->
 
 %% @private
 find_picotool() ->
-    case os:find_executable("picotool") of
-        false ->
-            "";
-        Picotool ->
-            Picotool
+    %% We use a mock picotool for CI tests to simulate resetting and mounting a device.
+    case os:getenv("ATOMVM_REBAR3_TEST_MODE") of
+        "true" ->
+            os:getenv("ATOMVM_REBAR3_TEST_PICOTOOL");
+        _ ->
+            case os:find_executable("picotool") of
+                false ->
+                    "";
+                Picotool ->
+                    Picotool
+            end
     end.
 
 %% @private
@@ -201,12 +207,19 @@ wait_for_mount(_Mount, 30) ->
 
 %% @private
 get_pico_mount(Mount) ->
+    Count =
+        case os:getenv("ATOMVM_REBAR3_TEST_MODE") of
+            "true" ->
+                25;
+            _ ->
+                0
+        end,
     case Mount of
         "" ->
             case find_mounted_pico() of
                 not_found ->
                     rebar_api:info("Waiting for an RP2 device to mount...", []),
-                    wait_for_mount(Mount, 0);
+                    wait_for_mount(Mount, Count);
                 {ok, Pico} ->
                     {ok, Pico}
             end;
@@ -219,7 +232,7 @@ get_pico_mount(Mount) ->
                     rebar_api:info("Waiting for the device at path ~s to mount...", [
                         string:trim(Mount)
                     ]),
-                    wait_for_mount(Mount, 0)
+                    wait_for_mount(Mount, Count)
             end
     end.
 
@@ -270,7 +283,12 @@ do_reset(ResetPort, Picotool) ->
                     rebar_api:warn("Disconnecting serial monitor with: `~s' in 5 seconds...", [
                         DevReset
                     ]),
-                    timer:sleep(5000),
+                    case os:getenv("ATOMVM_REBAR3_TEST_MODE") of
+                        "true" ->
+                            ok;
+                        _ ->
+                            timer:sleep(5000)
+                    end,
                     RebootReturn = os:cmd(DevReset),
                     RebootStatus = string:trim(RebootReturn),
                     case RebootStatus of
@@ -297,6 +315,16 @@ get_uf2_appname(ProjectApps) ->
 
 %% @private
 do_flash(ProjectApps, PicoPath, ResetDev, Picotool) ->
+    TestMode = os:getenv("ATOMVM_REBAR3_TEST_MODE"),
+    case TestMode of
+        "true" ->
+            rebar_api:info(
+                "Using picotool options:~n  --path ~s~n  --reset ~s~n  --picotool ~s",
+                [PicoPath, ResetDev, Picotool]
+            );
+        _ ->
+            ok
+    end,
     case needs_reset(ResetDev) of
         false ->
             rebar_api:debug("No Pico reset device found matching ~s.", [ResetDev]),
@@ -305,7 +333,15 @@ do_flash(ProjectApps, PicoPath, ResetDev, Picotool) ->
             rebar_api:debug("Pico at ~s needs reset...", [ResetPort]),
             do_reset(ResetPort, Picotool),
             rebar_api:info("Waiting for the device at path ~s to settle and mount...", [PicoPath]),
-            wait_for_mount(PicoPath, 0)
+            %% Reduce the timeout for tests since we aren't waiting for real hardware
+            Count =
+                case TestMode of
+                    "true" ->
+                        25;
+                    _ ->
+                        0
+                end,
+            wait_for_mount(PicoPath, Count)
     end,
     {ok, Path} = get_pico_mount(PicoPath),
     TargetUF2 = get_uf2_file(ProjectApps),
