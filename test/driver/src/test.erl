@@ -63,6 +63,10 @@ run_tests(Opts) ->
     ok = esp32_flash_tests:run(Opts),
     io:put_chars("\n"),
 
+    io:put_chars("pico_flash_tests: "),
+    ok = pico_flash_tests:run(Opts),
+    io:put_chars("\n"),
+
     io:put_chars("stm32_flash_tests: "),
     ok = stm32_flash_tests:run(Opts),
     io:put_chars("\n"),

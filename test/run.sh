@@ -25,9 +25,15 @@ unset ATOMVM_REBAR3_PLUGIN_PICO_RESET_DEV
 unset ATOMVM_REBAR3_PLUGIN_UF2CREATE_START
 
 export ATOMVM_REBAR3_TEST_MODE="true"
+export ATOMVM_PICOTOOL="${test_dir}/scripts/picotool.sh"
+export TEST_MYAPP_LOCK="${test_dir}/apps/myapp/_build/default/dev0"
+export TEST_MYAPP_MOUNT="${test_dir}/apps/myapp/_build/default/rp2040"
+export TEST_REBAR_OVERRIDES_LOCK="${test_dir}/apps/rebar_overrides/_build/default/dev0"
+export TEST_REBAR_OVERRIDES_MOUNT="${test_dir}/apps/rebar_overrides/_build/default/rp2350"
 
 cd "${test_dir}"
 rebar3 escriptize
 ./_build/default/bin/driver -r "$(pwd)" "$@"
 
-unset ATOMVM_REBAR3_TEST_MODE
+unset ATOMVM_REBAR3_TEST_MODE ATOMVM_PICOTOOL
+unset TEST_MYAPP_LOCK TEST_MYAPP_MOUNT TEST_REBAR_OVERRIDES_LOCK TEST_REBAR_OVERRIDES_MOUNT
