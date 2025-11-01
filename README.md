@@ -69,6 +69,7 @@ The [`rebar3`](https://rebar3.org) plugin provides the following tasks under the
 * `version`  Print the version of the [`atomvm_rebar3_plugin`](https://atomvm.github.io/atomvm_rebar3_plugin) to the console.
 * `bootstrap`  Compile Erlang files that `rebar3` otherwise cannot compile.  Typically, such files include modules from the OTP `kernel` or `stdlib` application that `rebar3` uses internally for its own implementation.
 * `dialyzer`  Use dialyzer for static analysis of AtomVM applications.
+* `escriptize`  Generate a standalone binary for the current host, using AtomVM.
 
 > IMPORTANT!  Some of the above tasks were previously located  under the default [`rebar3`](https://rebar3.org) namespace; however, the commands under the default namespace have been DEPRECATED.  Users will get a  warning message on the console when using deprecated tasks, and any deprecated tasks may be removed in the future without warning.  Be sure to migrate any scripts or code you have to use the `atomvm` namespace.
 
@@ -615,7 +616,29 @@ Example:
 
 Any setting specified on the command line take precedence over entries in `rebar.config`, which in turn take precedence over the default values specified above.
 
+### The `escriptize` task
 
+Use the `escriptize` task to generate a standalone binary combining AtomVM virtual machine and the application. The binary can then be copied to another host with the same architecture and would work provided that mbedtls and zlib are installed.
+
+To use this task, you need to define a module that exports a `main/1` function, following `rebar3` `escriptize` command. This function is invoked with the command line parameters, as strings.
+
+`-spec main(Args :: [string()]) -> ok | 0 | any().`
+
+If the function returns ok or 0, the `main` entry point will return 0 as its exit code. Otherwise, it will return 1. Please note that AtomVM does not implement `erlang:halt/1` as of this writing.
+
+The module that exports this `main/1` function should be declared in `rebar.config` file with either:
+- `start` option of `packbeam` task (see above):
+```
+{atomvm_rebar3_plugin, [{packbeam, [{start, main_module}]}]}.`
+```
+- `rebar3` standard `escript_name`:
+```
+{escript_name, main_module}.
+```
+- `rebar3` standard `escript_main_app` which `escript_name` defaults to:
+```
+{escript_main_app, main_module}.
+```
 
 ## AtomVM App Template
 

@@ -111,7 +111,7 @@ do(State) ->
             maps:get(external, Opts),
             maps:get(prune, Opts),
             maps:get(force, Opts),
-            get_start_module(Opts),
+            get_start_module(State, Opts),
             maps:get(application, Opts),
             not maps:get(remove_lines, Opts),
             maps:get(list, Opts)
@@ -127,9 +127,16 @@ do(State) ->
             {error, E}
     end.
 
-get_start_module(Opts) ->
+get_start_module(State, Opts) ->
     case maps:get(start, Opts, undefined) of
-        undefined -> undefined;
+        undefined ->
+            % Default to escript_name or escript_main_app
+            case rebar_state:get(State, escript_name, undefined) of
+                undefined ->
+                    rebar_state:get(State, escript_main_app, undefined);
+                EscriptName ->
+                    EscriptName
+            end;
         StartModule -> StartModule
     end.
 

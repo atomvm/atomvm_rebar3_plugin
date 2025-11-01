@@ -67,6 +67,10 @@ run_tests(Opts) ->
     ok = bootstrap_tests:run(Opts),
     io:put_chars("\n"),
 
+    io:put_chars("escriptize_tests: "),
+    ok = escriptize_tests:run(Opts),
+    io:put_chars("\n"),
+
     ok.
 
 make_path(Elements) ->
