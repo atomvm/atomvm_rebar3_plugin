@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Update dependancy version of atomvm_packbeam to 0.7.5
+- Update dependancy version of atomvm_packbeam to 0.8.0
 
 ### Added
 - Added dialyzer task to simplify running dialyzer on AtomVM applications.
