@@ -73,11 +73,22 @@ test_start(Opts) ->
     AVMElements = test:get_avm_elements(AVMPath),
 
     3 = length(AVMElements),
-    [MyAppBeam, StartBeam, MyAppApplicationBin] = AVMElements,
+    [BeamA, BeamB, MyAppApplicationBin] = AVMElements,
 
+    % Both BeamA and BeamB contain start/0 and are currently moved first
+    % by atomvm_packbeam_provider. Which one is sorted before the other is not
+    % defined.
+    {MyAppBeam, StartBeam} =
+        case {BeamA, BeamB} of
+            {[{module, myapp} | _], [{module, start} | _]} -> {BeamA, BeamB};
+            {[{module, start} | _], [{module, myapp} | _]} -> {BeamB, BeamA}
+        end,
+
+    {module, myapp} = hd(MyAppBeam),
     true = packbeam_api:is_beam(MyAppBeam),
     true = packbeam_api:is_entrypoint(MyAppBeam),
 
+    {module, start} = hd(StartBeam),
     true = packbeam_api:is_beam(StartBeam),
     true = packbeam_api:is_entrypoint(StartBeam),
 
@@ -86,6 +97,7 @@ test_start(Opts) ->
 
     %%
     %% Now specify `-s start` to get the start module first
+    %% In this case, packbeam will only make one beam an entrypoint
     %%
 
     Cmd2 = create_packbeam_cmd(AppDir, ["-f", {"-s", "start"}], []),
@@ -93,7 +105,22 @@ test_start(Opts) ->
     AVMElements2 = test:get_avm_elements(AVMPath),
 
     3 = length(AVMElements2),
-    [StartBeam, MyAppBeam, MyAppApplicationBin] = AVMElements2,
+    [StartBeam1, MyAppBeam1, MyAppApplicationBin1] = AVMElements2,
+
+    {module, start} = hd(StartBeam1),
+    true = packbeam_api:is_beam(StartBeam1),
+    true = packbeam_api:is_entrypoint(StartBeam1),
+    StartBeam1 = StartBeam,
+
+    {module, myapp} = hd(MyAppBeam1),
+    true = packbeam_api:is_beam(MyAppBeam1),
+    % Whether the second beam is an entrypoint is not verified by
+    % packbeam tests and becomes true with 0.8.0
+    % false = packbeam_api:is_entrypoint(MyAppBeam1),
+
+    false = packbeam_api:is_beam(MyAppApplicationBin1),
+    false = packbeam_api:is_entrypoint(MyAppApplicationBin1),
+    MyAppApplicationBin1 = MyAppApplicationBin,
 
     test:tick().
 
@@ -158,13 +185,26 @@ test_rebar_overrides(Opts) ->
     AVMElements = test:get_avm_elements(AVMPath),
 
     3 = length(AVMElements),
-    [StartBeam, MyAppBeam, MyAppApplicationBin] = AVMElements,
+    [BeamA, BeamB, MyAppApplicationBin] = AVMElements,
 
-    true = packbeam_api:is_beam(MyAppBeam),
-    true = packbeam_api:is_entrypoint(MyAppBeam),
+    % Both BeamA and BeamB contain start/0 and are currently moved first
+    % by atomvm_packbeam_provider. Which one is sorted before the other is not
+    % defined.
+    {MyAppBeam, StartBeam} =
+        case {BeamA, BeamB} of
+            {[{module, myapp} | _], [{module, start} | _]} -> {BeamA, BeamB};
+            {[{module, start} | _], [{module, myapp} | _]} -> {BeamB, BeamA}
+        end,
 
+    {module, start} = hd(StartBeam),
     true = packbeam_api:is_beam(StartBeam),
     true = packbeam_api:is_entrypoint(StartBeam),
+
+    {module, myapp} = hd(MyAppBeam),
+    true = packbeam_api:is_beam(MyAppBeam),
+    % Whether the second beam is not an entrypoint is not verified by
+    % packbeam tests and becomes true with 0.8.0
+    % false = packbeam_api:is_entrypoint(MyAppBeam),
 
     false = packbeam_api:is_beam(MyAppApplicationBin),
     false = packbeam_api:is_entrypoint(MyAppApplicationBin),
@@ -178,7 +218,18 @@ test_rebar_overrides(Opts) ->
     AVMElements2 = test:get_avm_elements(AVMPath),
 
     3 = length(AVMElements2),
-    [MyAppBeam, StartBeam, MyAppApplicationBin] = AVMElements2,
+    [MyAppBeam1, StartBeam1, MyAppApplicationBin1] = AVMElements2,
+
+    true = packbeam_api:is_beam(MyAppBeam1),
+    true = packbeam_api:is_entrypoint(MyAppBeam1),
+
+    true = packbeam_api:is_beam(StartBeam1),
+    % Whether the second beam is not an entrypoint is not verified by
+    % packbeam tests and becomes true with 0.8.0
+    % false = packbeam_api:is_entrypoint(StartBeam1),
+
+    false = packbeam_api:is_beam(MyAppApplicationBin1),
+    false = packbeam_api:is_entrypoint(MyAppApplicationBin1),
 
     test:tick().
 
