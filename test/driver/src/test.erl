@@ -105,7 +105,7 @@ create_rebar3_cmd(AppPath, Task, Opts, Env) ->
 make_env(Env) ->
     lists:foldl(
         fun({Key, Value}, Accum) ->
-            io_lib:format("~s=~s ", [Key, Value]) ++ Accum
+            io_lib:format("~s=\"~s\" ", [Key, Value]) ++ Accum
         end,
         [],
         Env

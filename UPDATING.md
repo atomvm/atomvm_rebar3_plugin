@@ -6,6 +6,17 @@
 
 # `atomvm_rebar3_plugin` Update Instructions
 
+## (unreleased)
+
+- The `esp32_flash` task now reads the application `offset` from the partition table on the device.
+If you are using a custom partition table that does not use `main.avm` for the application partition
+name you should supply the name used with the `app_partition` parameter. An `offset` may optionally
+be supplied to assure the offset of the application partition matches the expected offset, this may
+be helpful to assure that specific applications are only flashed to devices with a custom build of
+AtomVM.
+- Pico 2 (RP2350) devices are recognized and now work with default parameters. Specifying device
+path and uf2 flavor for these chipsets is no longer necessary.
+
 ## 0.6.* -> 0.7.*
 
 - The `atomvm_rebar3_plugin` tasks have been moved into the `atomvm` namespace (from the [`rebar3`](https://rebar3.org) `default` namespace).  The "legacy" tasks in the `default` namespace are deprecated, and users will be issued a warning when used.  Be sure to use the `atomvm` namespace in any future usage of this plugin, as the deprecated tasks may be removed without warning.  E.g., `rebar3 atomvm packbeam ...`
