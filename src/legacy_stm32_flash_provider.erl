@@ -54,7 +54,7 @@ init(State) ->
         {short_desc, "A rebar plugin to flash packbeam files to STM32 devices (DEPRECATED)"},
         {desc,
             "A rebar plugin to flash packbeam files to STM32 devices.~n~n"
-            "IMPORTANT! this plugin has been DEPRECATED!~n"
+            "IMPORTANT! this plugin has been DEPRECATED and will be REMOVED in the 0.9.0 release!~n"
             "Use `rebar3 atomvm stm32_flash`, instead.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
@@ -62,6 +62,7 @@ init(State) ->
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
     rebar_api:warn("DEPRECATED The stm32_flash tool has been moved under the atomvm namespace", []),
+    rebar_api:warn("This legacy provider will be REMOVED in the 0.9.0 release.", []),
     atomvm_stm32_flash_provider:do(State).
 
 -spec format_error(any()) -> iolist().
