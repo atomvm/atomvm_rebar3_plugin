@@ -35,7 +35,7 @@ test_defaults(Opts) ->
     test:debug(Output, Opts),
 
     ok = test:expect_contains("Created packed AVM:", Output),
-    ok = test:expect_contains("_build/default/lib/myscript_packed.avm", Output),
+    ok = test:expect_contains("_build/default/lib/myscript.avm", Output),
     ok = test:expect_contains("with start module myscript", Output),
 
     ok = test:expect_contains("Created standalone executable:", Output),
@@ -44,7 +44,7 @@ test_defaults(Opts) ->
     ExecPath = test:make_path([AppDir, "_build/default/bin/myscript"]),
     ok = test:file_exists(ExecPath),
 
-    [] = test:execute_cmd(ExecPath),
+    [] = test:execute_cmd(ExecPath, Opts),
 
     test:tick().
 

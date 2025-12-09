@@ -10,7 +10,7 @@ on: [push, pull_request]
 
 jobs:
   build-and-test:
-    runs-on: "ubuntu-22.04"
+    runs-on: "ubuntu-24.04"
     strategy:
       matrix:
         otp: ["25", "26", "27", "28"]
@@ -18,24 +18,18 @@ jobs:
         include:
           - otp: "25"
             make_jobs: "compile etest"
+            rebar3_version: "3.24.0 "
           - otp: "26"
             make_jobs: "all"
+            rebar3_version: "3.25.1"
           - otp: "27"
             make_jobs: "all"
+            rebar3_version: "3.25.1"
           - otp: "28"
             make_jobs: "all"
+            rebar3_version: "3.25.1"
 
     steps:
-    # Setup
-    - name: "Checkout repo"
-      uses: actions/checkout@v2
-      with:
-        submodules: 'recursive'
-
-    - uses: erlef/setup-beam@v1
-      with:
-        otp-version: ${{ matrix.otp }}
-
     # Builder info
     - name: "System info"
       run: |
@@ -44,17 +38,43 @@ jobs:
         echo "**OTP version:**"
         cat $(dirname $(which erlc))/../releases/RELEASES || true
 
+    # Setup OTP
+    - name: "Setup OTP"
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ matrix.otp }}
+        rebar3-version: ${{ matrix.rebar3_version }}
+
+    # Checkout AtomVM
+    - name: "Checkout AtomVM"
+      uses: actions/checkout@v5
+      with:
+        repository: 'atomvm/AtomVM'
+        path: 'atomvm'
+        submodules: 'recursive'
+
     - name: "Install deps"
       run: |
-        sudo apt install -y make git
+        sudo apt install -y make git gcc-14 g++-14 cmake gperf zlib1g-dev libmbedtls-dev ninja-build
 
-    - name: "Build rebar3"
+    - name: "Install AtomVM"
+      working-directory: 'atomvm'
       run: |
-        cd /tmp
-        git clone https://github.com/erlang/rebar3.git
-        cd rebar3
-        ./bootstrap
+        mkdir build
+        cd build
+        cmake -DAVM_BUILD_RUNTIME_ONLY=ON -G Ninja ..
+        ninja
+        sudo ninja install
+        atomvm -v
+
+    # Setup
+    - name: "Checkout repo"
+      uses: actions/checkout@v5
+      with:
+        path: 'atomvm_packbeam'
+        submodules: 'recursive'
 
     # Build
     - name: "Make"
+      working-directory: 'atomvm_packbeam'
       run: PATH="/tmp/rebar3:${PATH}" make ${{ matrix.make_jobs }}

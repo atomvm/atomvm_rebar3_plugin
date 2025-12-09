@@ -128,10 +128,10 @@ make_opts(Opts) ->
     ).
 
 execute_cmd(Cmd) ->
-    execute_cmd(Cmd, false).
+    execute_cmd(Cmd, #{}).
 
 execute_cmd(Cmd, Opts) ->
-    case maps:get(verbose, Opts) orelse maps:get(debug, Opts) of
+    case maps:get(verbose, Opts, false) orelse maps:get(debug, Opts, false) of
         true ->
             io:format("#executing> ~s~n", [Cmd]);
         _ ->
@@ -141,7 +141,7 @@ execute_cmd(Cmd, Opts) ->
     os:cmd(Cmd).
 
 debug(Msg, Opts) ->
-    case maps:get(debug, Opts) of
+    case maps:get(debug, Opts, false) of
         true ->
             io:format("~s~n", [Msg]);
         _ ->

@@ -137,7 +137,8 @@ get_start_module(State, Opts) ->
                 EscriptName ->
                     EscriptName
             end;
-        StartModule -> StartModule
+        StartModule ->
+            StartModule
     end.
 
 -spec format_error(any()) -> iolist().

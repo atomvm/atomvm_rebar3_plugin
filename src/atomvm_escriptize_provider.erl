@@ -29,8 +29,8 @@
 -define(PROVIDER, escriptize).
 -define(DEPS, [packbeam]).
 -define(OPTS, [
-    {atomvm_binary, $b, "atomvm_binary", string, "Path to AtomVM binary (default: which AtomVM)"},
-    {atomvmlib, $l, "atomvmlib", string, "Path to atomvmlib.avm"},
+    {atomvm_binary, $b, "atomvm_binary", string, "Path to AtomVM binary (default: which atomvm)"},
+    {atomvmlib, $l, "atomvmlib", string, "Path to atomvmlib.avm (default: auto discovered)"},
     {output, $o, "output", string, "Output executable name (default: app name)"},
     {objcopy, $c, "objcopy", string, "Path to objcopy tool (auto-detected if not specified)"},
     {start, $s, "start", atom, "Start module (default: app name)"}
@@ -115,10 +115,11 @@ do(State) ->
     catch
         C:E:S ->
             rebar_api:error(
-                "An error occurred in the ~p task.  Class=~p Error=~p Stacktrace=~p~n", [
-                    ?PROVIDER, C, E, S
+                "An error occurred in the ~p task.  Class=~p Error=~p~n", [
+                    ?PROVIDER, C, E
                 ]
             ),
+            rebar_api:debug("===== Stacktrace ==~n~p~n", [S]),
             {error, E}
     end.
 
@@ -156,7 +157,7 @@ get_atomvmlib_path(Opts) ->
 %% @private
 find_atomvmlib() ->
     % First try to infer from AtomVM wrapper script
-    case os:find_executable("AtomVM") of
+    case os:find_executable("atomvm") of
         false ->
             find_atomvmlib_fallback();
         WrapperPath ->
@@ -173,6 +174,7 @@ find_atomvmlib_fallback() ->
         "/opt/local/lib/atomvm/atomvmlib.avm",
         "/usr/local/lib/atomvm/atomvmlib.avm",
         "/usr/lib/atomvm/atomvmlib.avm",
+        filename:join([os:getenv("HOME", "/.local"), "lib", "atomvm", "atomvmlib.avm"]),
         filename:join([os:getenv("HOME", "/tmp"), ".atomvm", "lib", "atomvmlib.avm"])
     ],
     case lists:filter(fun filelib:is_file/1, PossiblePaths) of
@@ -210,9 +212,18 @@ get_atomvm_binary(Opts) ->
 
 %% @private
 find_atomvm_binary() ->
-    case os:find_executable("AtomVM") of
+    case os:find_executable("atomvm") of
         false ->
-            {error, "AtomVM binary not found in PATH. Please specify with --atomvm_binary option"};
+            case os:find_executable("AtomVM") of
+                Path ->
+                    case resolve_atomvm_binary(Path) of
+                        {ok, BinaryPath} ->
+                            {ok, BinaryPath};
+                        _ ->
+                            {error,
+                                "AtomVM binary not found in PATH. Please specify with --atomvm_binary option"}
+                    end
+            end;
         Path ->
             % Check if it's a shell script wrapper and find the actual binary
             case resolve_atomvm_binary(Path) of
@@ -227,16 +238,22 @@ resolve_atomvm_binary(Path) ->
     % Try to read the file to see if it's a shell script
     case file:read_file(Path) of
         {ok, Content} ->
-            case binary:match(Content, <<"#!/bin/sh">>) of
-                {0, _} ->
+            case binary:part(Content, 0, 9) of
+                <<"#!/bin/sh">> ->
                     % It's a shell script, parse it to find the actual binary
-                    % The standard wrapper is at /prefix/bin/AtomVM
+                    % The standard wrapper is at /prefix/bin/atomvm
                     % The actual binary is at /prefix/lib/atomvm/AtomVM
                     Dir = filename:dirname(Path),
                     Prefix = filename:dirname(Dir),
                     ActualBinary = filename:join([Prefix, "lib", "atomvm", "AtomVM"]),
                     case filelib:is_file(ActualBinary) of
                         true -> {ok, ActualBinary};
+                        false -> {error, not_found}
+                    end;
+                <<_:8, $e, $l, $f, _:40>> ->
+                    % It's the actual binary
+                    case filelib:is_file(Path) of
+                        true -> {ok, Path};
                         false -> {error, not_found}
                     end;
                 _ ->
