@@ -57,7 +57,7 @@ init(State) ->
         {short_desc, "A rebar plugin to create packbeam files (DEPRECATED)"},
         {desc,
             "A rebar plugin to create packbeam files.~n~n"
-            "IMPORTANT! this plugin has been DEPRECATED!~n"
+            "IMPORTANT! this plugin has been DEPRECATED and will be REMOVED in the 0.9.0 release!~n"
             "Use `rebar3 atomvm packbeam`, instead.~n"}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
@@ -65,6 +65,7 @@ init(State) ->
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
     rebar_api:warn("DEPRECATED The packbeam tool has been moved under the atomvm namespace", []),
+    rebar_api:warn("This legacy provider will be REMOVED in the 0.9.0 release.", []),
     atomvm_packbeam_provider:do(State).
 
 -spec format_error(any()) -> iolist().
