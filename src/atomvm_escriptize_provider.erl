@@ -235,32 +235,24 @@ find_atomvm_binary() ->
 
 %% @private
 resolve_atomvm_binary(Path) ->
-    % Try to read the file to see if it's a shell script
-    case file:read_file(Path) of
-        {ok, Content} ->
-            case binary:part(Content, 0, 9) of
-                <<"#!/bin/sh">> ->
-                    % It's a shell script, parse it to find the actual binary
-                    % The standard wrapper is at /prefix/bin/atomvm
-                    % The actual binary is at /prefix/lib/atomvm/AtomVM
-                    Dir = filename:dirname(Path),
-                    Prefix = filename:dirname(Dir),
-                    ActualBinary = filename:join([Prefix, "lib", "atomvm", "AtomVM"]),
-                    case filelib:is_file(ActualBinary) of
-                        true -> {ok, ActualBinary};
-                        false -> {error, not_found}
-                    end;
-                <<_:8, $e, $l, $f, _:40>> ->
-                    % It's the actual binary
-                    case filelib:is_file(Path) of
-                        true -> {ok, Path};
-                        false -> {error, not_found}
-                    end;
-                _ ->
-                    {error, not_a_script}
+    case string:trim(os:cmd("file -b --mime-type " ++ Path)) of
+        "text/x-shellscript" ->
+            % It's a shell script, suppose
+            % The standard wrapper is at /prefix/bin/atomvm
+            % The actual binary is at /prefix/lib/atomvm/AtomVM
+            Dir = filename:dirname(Path),
+            Prefix = filename:dirname(Dir),
+            ActualBinary = filename:join([Prefix, "lib", "atomvm", "AtomVM"]),
+            case filelib:is_file(ActualBinary) of
+                true -> {ok, ActualBinary};
+                false -> {error, not_found}
             end;
-        {error, Reason} ->
-            {error, Reason}
+        "application/x-mach-binary" ->
+            {ok, Path};
+        "application/x-elf" ->
+            {ok, Path};
+        Other ->
+            {error, {unexpected, Other}}
     end.
 
 %% @private
@@ -281,7 +273,7 @@ find_objcopy() ->
     Tools =
         case os:type() of
             {unix, darwin} ->
-                % On macOS, prefer llvm-objcopy and try MacPorts variants
+                % On macOS, prefer llvm-objcopy (Homebrew) and try MacPorts variants
                 [
                     "llvm-objcopy",
                     "llvm-objcopy-mp-21",
@@ -296,8 +288,11 @@ find_objcopy() ->
                 ["objcopy", "llvm-objcopy"]
         end,
     case find_first_executable(Tools) of
-        {ok, Path} -> {ok, Path};
-        error -> {error, "No objcopy tool found. Please install llvm or binutils"}
+        {ok, Path} ->
+            {ok, Path};
+        error ->
+            {error,
+                "No objcopy tool found. Please install llvm or binutils and ensure objcopy or llvm-objcopy is on the PATH"}
     end.
 
 %% @private

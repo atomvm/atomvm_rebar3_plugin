@@ -10,15 +10,17 @@ on: [push, pull_request]
 
 jobs:
   build-and-test:
-    runs-on: "ubuntu-24.04"
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         otp: ["25", "26", "27", "28"]
+        os: ["ubuntu-24.04", "ubuntu-24.04-arm", "macos-26", "macos-15-intel"]
 
         include:
           - otp: "25"
             make_jobs: "compile etest"
-            rebar3_version: "3.24.0 "
+            rebar3_version: "3.24.0"
           - otp: "26"
             make_jobs: "all"
             rebar3_version: "3.25.1"
@@ -31,19 +33,45 @@ jobs:
 
     steps:
     # Builder info
+    - name: "Install deps"
+      if: startsWith(matrix.os, 'macos-') && matrix.otp != '25'
+      run: |
+        brew update && HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install gperf ninja llvm erlang@${{ matrix.otp }} rebar3
+        echo PATH="/usr/local/opt/llvm/bin:/opt/homebrew/opt/llvm/bin:$PATH" >> $GITHUB_ENV
+
+    - name: "Install deps"
+      if: startsWith(matrix.os, 'macos-') && matrix.otp == '25'
+      run: |
+        brew update
+        HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install gperf ninja llvm erlang@${{ matrix.otp }}
+        wget https://github.com/erlang/rebar3/releases/download/${{ matrix.rebar3_version }}/rebar3
+        chmod +x rebar3
+        for bin_dir in {/usr/local,/opt/homebrew}/opt/erlang@25/bin/ ; do
+            if [ -e ${bin_dir} ]; then
+                sudo cp rebar3 ${bin_dir}
+            fi
+        done
+        echo PATH="/usr/local/opt/llvm/bin:/opt/homebrew/opt/llvm/bin:/usr/local/opt/erlang@${{ matrix.otp }}/bin:/opt/homebrew/opt/erlang@${{ matrix.otp }}/bin:$PATH" >> $GITHUB_ENV
+
+    - name: "Install deps"
+      if: startsWith(matrix.os, 'ubuntu-')
+      run: |
+        sudo apt install -y make git gcc-14 g++-14 cmake gperf zlib1g-dev libmbedtls-dev ninja-build
+
+    # Setup OTP
+    - name: "Setup OTP"
+      if: startsWith(matrix.os, 'ubuntu-')
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ matrix.otp }}
+        rebar3-version: ${{ matrix.rebar3_version }}
+
     - name: "System info"
       run: |
         echo "**uname:**"
         uname -a
         echo "**OTP version:**"
         cat $(dirname $(which erlc))/../releases/RELEASES || true
-
-    # Setup OTP
-    - name: "Setup OTP"
-      uses: erlef/setup-beam@v1
-      with:
-        otp-version: ${{ matrix.otp }}
-        rebar3-version: ${{ matrix.rebar3_version }}
 
     # Checkout AtomVM
     - name: "Checkout AtomVM"
@@ -53,18 +81,14 @@ jobs:
         path: 'atomvm'
         submodules: 'recursive'
 
-    - name: "Install deps"
-      run: |
-        sudo apt install -y make git gcc-14 g++-14 cmake gperf zlib1g-dev libmbedtls-dev ninja-build
-
     - name: "Install AtomVM"
       working-directory: 'atomvm'
       run: |
         mkdir build
         cd build
         cmake -DAVM_BUILD_RUNTIME_ONLY=ON -G Ninja ..
-        ninja
-        sudo ninja install
+        cmake --build .
+        sudo cmake --build . -t install
         atomvm -v
 
     # Setup
