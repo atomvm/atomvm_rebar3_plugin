@@ -445,7 +445,7 @@ set_atomvm_avm_info(ObjCopyTool, Executable, SectionName, SectionSize) ->
 
     ObjCopyCmd = lists:flatten(
         io_lib:format(
-            "~s --update-section .atomvm_avm_info=~s --set-section-flags .atomvm_avm_info=alloc,load,readonly,data ~s",
+            "~s --update-section .atomvm_avm_info=~s ~s",
             [ObjCopyTool, AVMInfoTempFile, Executable]
         )
     ),
