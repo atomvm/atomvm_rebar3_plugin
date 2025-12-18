@@ -190,7 +190,7 @@ do_build_base_plt(Config) ->
     PLT = base_plt_absname(Config),
     try
         dialyzer:run([
-            {analysis_type, plt_build}, {init_plt, PLT}, {output_plt, PLT}, {files_rec, BEAMdir}
+            {analysis_type, plt_build}, {init_plt, PLT}, {output_plt, PLT}, {files, BEAMdir}
         ])
     of
         [] ->
@@ -286,7 +286,7 @@ get_base_beam_path_list(Base) ->
             fun(E, Acc) ->
                 [
                     filelib:wildcard(
-                        Base ++ "/{lib,libs}/" ++ atom_to_list(E) ++ "*/**/{ebin,beams}"
+                        Base ++ "/{lib,libs}/" ++ atom_to_list(E) ++ "*/**/src"
                     )
                     | Acc
                 ]
