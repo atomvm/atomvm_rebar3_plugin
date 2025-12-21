@@ -55,8 +55,16 @@ run_tests(Opts) ->
     ok = packbeam_tests:run(Opts),
     io:put_chars("\n"),
 
+    io:put_chars("uf2create_tests: "),
+    ok = uf2create_tests:run(Opts),
+    io:put_chars("\n"),
+
     io:put_chars("esp32_flash_tests: "),
     ok = esp32_flash_tests:run(Opts),
+    io:put_chars("\n"),
+
+    io:put_chars("pico_flash_tests: "),
+    ok = pico_flash_tests:run(Opts),
     io:put_chars("\n"),
 
     io:put_chars("stm32_flash_tests: "),
