@@ -14,7 +14,7 @@ doc:
 	rebar3 as doc ex_doc
 
 etest:
-	cd test && ./run.sh
+	cd test && TEST=1 ./run.sh
 
 clean:
 	rm -rf _build

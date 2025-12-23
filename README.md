@@ -261,24 +261,36 @@ Running this AVM file will boot the `myapp` application automatically, without h
 
 You may use the `esp32_flash` task to flash the generated AtomVM packbeam application to the flash storage on an ESP32 device connected over a serial connection.
 
-    shell$ rebar3 help atomvm esp32_flash
+```shell
+shell$ rebar3 help atomvm esp32_flash
 
-    Use this plugin to flash an AtomVM packbeam file to an ESP32 device.
+Use this plugin to flash an AtomVM packbeam file to an ESP32 device.
 
-    Usage: rebar3 atomvm esp32_flash [-e <esptool>] [-c <chip>] [-p <port>]
-                                    [-b <baud>] [-o <offset>]
+Usage: rebar3 atomvm esp32_flash [-e <esptool>] [-c <chip>] [-p <port>]
+                                 [-b <baud>] [-o <offset>]
+                                 [-a <app_partition>]
 
-    -e, --esptool  Path to esptool.py
-    -c, --chip     ESP chip (default auto)
-    -p, --port     Device port (default /dev/ttyUSB0)
-    -b, --baud     Baud rate (default 115200)
-    -o, --offset   Offset (default 0x210000)
+  -e, --esptool        Path to esptool.py
+  -c, --chip           ESP chip (default auto)
+  -p, --port           Device port (default auto discovery)
+  -b, --baud           Baud rate (default 115200)
+  -o, --offset         Offset (default read from device) *deprecated, use
+                       app_partition. When given, a warning will be issued
+                       if the partition name does not match the expected
+                       name, as long as the offset aligns with a valid
+                       application partition.
+  -a, --app_partition  Application partition name (default main.avm)
+```
 
 The `esp32_flash` task will use the `esptool.py` command to flash the ESP32 device.  This tool is available via the <a href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/">IDF SDK</a>, or directly via <a href="https://github.com/espressif/esptool">github</a>.  The `esptool.py` command is also available via many package managers (e.g., MacOS Homebrew).
 
-By default, the `esp32_flash` task will assume the `esptool.py` command is available on the user's executable path.  Alternatively, you may specify the full path to the `esptool.py` command via the `-e` (or `--esptool`) option
+The `esp32_flash` task will assume the `esptool.py` command is available on the user's executable
+path.  Alternatively, you may specify the full path to the `esptool.py` command via the `-e` (or
+`--esptool`) option.
 
-By default, the `esp32_flash` task will write to port `/dev/ttyUSB0` at a baud rate of `115200`.  You may control the port and baud settings for connecting to your ESP device via the `-port` and `-baud` options to the `esp32_flash` task, e.g.,
+By default, the `esp32_flash` task uses port auto discovery to find any attached ESP32 device and a
+baud rate of `115200`.  You may control the port and baud settings for connecting to your ESP32
+device via the `--port` and `--baud` options to the `esp32_flash` task, e.g.,
 
     shell$ rebar3 atomvm esp32_flash --port /dev/tty.SLAB_USBtoUART --baud 921600
     ...
@@ -307,7 +319,8 @@ The following table enumerates the properties that may be defined in your projec
 | `chip` | `string()` | ESP32 chip type |
 | `port` | `string()` | Device port on which the ESP32 can be located |
 | `baud` | `integer()` | Device BAUD rate |
-| `offset` | `string()` | Offset into which to write AtomVM application |
+| `offset` | `string()` | Optionally verify offset on flash matches expected value. Original behavior deprecated: use `app_partition` for custom images or to target a different partition |
+| `app_partition` | `string()` | Name of application partition to write AtomVM application for custom partition tables |
 
 Example:
 
@@ -320,8 +333,23 @@ Alternatively, the following environment variables may be used to control the ab
 * `ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_PORT`
 * `ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_BAUD`
 * `ATOMVM_REBAR3_PLUGIN_ESP32_FLASH_OFFSET`
+* `ATOMVM_REBAR3_PLUGIN_ESP32_APP_PARTITION`
 
 Any setting specified on the command line take precedence over settings in `rebar.config`, which in turn take precedence over environment variable settings, which in turn take precedence over the default values specified above.
+
+```note
+The  behavior of the `offset` configuration option has changed, the correct offset for standard
+AtomVM builds are determined by the partition table flashed to the device. Elixir supported builds
+are recognized and the correct offset will be used. When using a custom partition table it is
+necessary to supply the `app_partition` name. If an offset is given it will be compared to the
+address of the discovered `app_partition` and an warning will be given if they do not match, but as
+long as the offset aligns to the beginning of a `data` partition with a valid subtype it will be
+used. Currently any subtype not reserved for another purpose (such as `fat`, `nvs`, or ESP-IDF
+defined subtypes) are considered valid. AtomVM release images use subtype `phy` for the `main.avm`
+BEAM application partition, but it is not necessary to supply the name when using a release image
+or one of the standard partition tables, or custom tables that use the name `main.avm` for the app
+partition.
+```
 
 The `esp32_flash` task depends on the `packbeam` task, so the packbeam file will get automatically built if any changes have been made to its dependencies.
 
