@@ -496,9 +496,9 @@ The following table enumerates the valid `family_id` options:
 | Key         | Description |
 |-------------|-------------|
 | `rp2040`    | Original Raspberry Pi Pico and Pico-W |
-| `rp2035`    | Raspberry Pi Pico 2 |
+| `rp2350`    | Raspberry Pi Pico 2 |
 | `data`      | Raspberry Pi Pico 2 |
-| `universal` | Universal format for both `rp2040` and `rp2035` |
+| `universal` | Universal format for both `rp2040` and `rp2350` |
 
 > Note the convenience of universal uf2 binaries comes with the expense of being twice the size, as both versions are included in the universal uf2.
 

@@ -79,7 +79,8 @@ do(State) ->
         StartAddrStr = parse_addr(maps:get(start, Opts)),
         Image = maps:get(input, Opts, TargetAVM),
         Uf2Flavor = validate_flavor(maps:get(family_id, Opts)),
-        ok = uf2tool:uf2create(Output, Uf2Flavor, StartAddrStr, Image),
+        ok = do_create_uf2(Output, Uf2Flavor, StartAddrStr, Image),
+        rebar_api:info("UF2 file written to ~s", [Output]),
         {ok, State}
     catch
         C:E:S ->
@@ -98,6 +99,19 @@ format_error(Reason) ->
 %%
 %% internal functions
 %%
+
+%% @private
+do_create_uf2(Output, Uf2Flavor, StartAddrStr, Image) ->
+    case os:getenv("ATOMVM_REBAR3_TEST_MODE") of
+        "true" ->
+            rebar_api:info(
+                "Using uf2create options:~n  --output ~s~n  --family_id ~p~n  --start 0x~.16B~n  --input ~s",
+                [Output, Uf2Flavor, StartAddrStr, Image]
+            );
+        _ ->
+            ok
+    end,
+    uf2tool:uf2create(Output, Uf2Flavor, StartAddrStr, Image).
 
 %% @private
 get_opts(State) ->
@@ -153,9 +167,9 @@ validate_flavor(Flavor) ->
             rp2040;
         "rp2040" ->
             rp2040;
-        rp2035 ->
+        rp2350 ->
             data;
-        "rp2035" ->
+        "rp2350" ->
             data;
         data ->
             data;
