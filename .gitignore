@@ -11,3 +11,4 @@
 **/erl_crash.dump
 !priv/.gitignore
 !examples/myapp/.gitignore
+docs/**

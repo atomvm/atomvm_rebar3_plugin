@@ -18,6 +18,7 @@ etest:
 
 clean:
 	rm -rf _build
+	rm -rf docs
 
 publish: doc
 	rebar3 as publish hex publish --doc-dir docs
