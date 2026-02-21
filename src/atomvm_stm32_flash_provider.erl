@@ -32,7 +32,14 @@
 -define(DEPS, [packbeam]).
 -define(OPTS, [
     {stflash, $s, "stflash", string, "Path to st-flash"},
-    {offset, $o, "offset", string, "Offset (default 0x8080000)"}
+    {offset, $o, "offset", string, "Offset (default 0x8080000)"},
+    {prune, $P, "prune", boolean, "Prune unused modules with packbeam"},
+    {external, $E, "external", string, "External modules to add to packed AVM"},
+    {force, $F, "force", boolean, "Force packbeam to repack"},
+    {application, $A, "application", boolean, "Build and flash an OTP application"},
+    {remove_lines, $R, "remove_lines", boolean,
+        "Remove line information from generated AVM files (off by default)"},
+    {list, $L, "list", boolean, "List the contents of AVM files after creation"}
 ]).
 
 -define(DEFAULT_OPTS, #{

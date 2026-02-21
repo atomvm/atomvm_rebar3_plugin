@@ -33,7 +33,14 @@
         "Device family or flavor of uf2 file to create (default universal)"},
     {output, $o, "output", string, "Output path/name"},
     {start, $s, "start", string, "Start address for the uf2 binary (default 0x10180000)"},
-    {input, $i, "input", string, "Input avm file to convert to uf2"}
+    {input, $i, "input", string, "Input avm file to convert to uf2"},
+    {prune, $P, "prune", boolean, "Prune unused modules with packbeam"},
+    {external, $E, "external", string, "External modules to add to packed AVM"},
+    {force, $F, "force", boolean, "Force packbeam to repack"},
+    {application, $A, "application", boolean, "Build and flash an OTP application"},
+    {remove_lines, $R, "remove_lines", boolean,
+        "Remove line information from generated AVM files (off by default)"},
+    {list, $L, "list", boolean, "List the contents of AVM files after creation"}
 ]).
 
 -define(DEFAULT_OPTS, #{

@@ -35,7 +35,14 @@
         "Path to pico device (Defaults Linux: /run/media/${USER}/RPI-RP2, MacOS: /Volumes/RPI-RP2)"},
     {reset, $r, "reset", string,
         "Path to serial device to reset before flashing (Defaults Linux: /dev/ttyACM0, MacOS: /dev/cu.usbmodem14*)"},
-    {picotool, $t, "picotool", string, "Path to picotool utility (Default is to search in PATH)"}
+    {picotool, $t, "picotool", string, "Path to picotool utility (Default is to search in PATH)"},
+    {prune, $P, "prune", boolean, "Prune unused modules with packbeam"},
+    {external, $E, "external", string, "External modules to add to packed AVM"},
+    {force, $F, "force", boolean, "Force packbeam to repack"},
+    {application, $A, "application", boolean, "Build and flash an OTP application"},
+    {remove_lines, $R, "remove_lines", boolean,
+        "Remove line information from generated AVM files (off by default)"},
+    {list, $L, "list", boolean, "List the contents of AVM files after creation"}
 ]).
 
 %%

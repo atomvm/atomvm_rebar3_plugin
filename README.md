@@ -180,6 +180,11 @@ Any setting specified on the command line take precedence over settings in `reba
 
 The `packbeam` task depends on the `compile` task, so any changes to modules in the project will automatically get rebuilt when running the `packbeam` task.
 
+Packbeam options may also be passed through from other higher level tasks such as `uf2create` or
+the various flash tasks for mcu platforms. When options for packbeam are given to other tasks use
+the long version, or the capitalized version of the short parameters, for example `-P` or
+`--prune` intstead of `-p`.
+
 #### External Dependencies
 
 If you already have AVM modules are not available via `rebar3`, you can direct the `packbeam` task to these AVM files via the `--external` (or `-e`) flag, e.g.,
