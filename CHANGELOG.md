@@ -16,8 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added dialyzer task to simplify running dialyzer on AtomVM applications.
 - Added support for rp2350 devices to allow for default detection of the device mount path.
-- Added configuration paramenter for setting the path to picotool for the pico_flash task.
+- Added configuration parameter for setting the path to picotool for the pico_flash task.
 - Added escriptize task to build escriptize-like bundled binaries with AtomVM.
+- Added `app_partition` parameter to `esp32_flash` task. This is only needed to be provided for
+custom partition tables that do not use `main.avm` for the beam application partition name, or to
+flash to a custom alternate partition.
 
 ### Changed
 - The `uf2create` task now creates `universal` format uf2 files by default, suitable for both
@@ -26,6 +29,16 @@ rp2040 or rp2350 devices.
 mode, preventing interference with other MCUs that may be attached to the host system.
 - The `pico_flash` task now aborts on all errors rather than trying to continue after a failure.
 - Update dependency version of atomvm_packbeam to 0.8.1
+- `offset` for the `esp32_flash` provider is no longer required, and use is deprecated in favor of
+`app_partition`.
+- The `esp32_flash` task now uses auto discovery for the `port` by default.
+- Stacktraces are not shown by default if the `esp32_flash` fails, instead a descriptive error
+message is displayed. To view the stacktrace use diagnostic mode.
+
+### Fixed
+- The `esp32_flash` task aborts when an error occurs, rather than attempt to continue after a step
+has failed.
+>>>>>>> ddc33c5 (Enhancements for the esp32_flash task)
 
 ## [0.7.5] (2025.05.27)
 
