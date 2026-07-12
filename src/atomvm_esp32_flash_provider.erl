@@ -107,10 +107,14 @@ get_opts(State) ->
     {ParsedArgs, _} = rebar_state:command_parsed_args(State),
     RebarOpts = atomvm_rebar3_plugin:get_atomvm_rebar_provider_config(State, ?PROVIDER),
     ParsedOpts = atomvm_rebar3_plugin:proplist_to_map(ParsedArgs),
-    maps:merge(
+    Opts = maps:merge(
         env_opts(),
         maps:merge(RebarOpts, ParsedOpts)
-    ).
+    ),
+    % baud may arrive as a string from rebar.config or from the legacy
+    % (non-namespaced) esp32_flash task, whose option spec used to type
+    % it as a string; do_flash needs an integer.
+    Opts#{baud := maybe_convert_string(maps:get(baud, Opts))}.
 
 %% @private
 env_opts() ->
