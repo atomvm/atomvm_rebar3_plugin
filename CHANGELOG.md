@@ -26,6 +26,10 @@ rp2040 or rp2350 devices.
 mode, preventing interference with other MCUs that may be attached to the host system.
 - The `pico_flash` task now aborts on all errors rather than trying to continue after a failure.
 - Update dependency version of atomvm_packbeam to 0.8.1
+## [0.7.6] (unreleased)
+
+### Changed
+- Update `atomvm_packbeam` dependency to 0.8.3.
 
 ## [0.7.5] (2025.05.27)
 
