@@ -19,6 +19,10 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref != 'refs/heads/main' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pages: write
@@ -27,7 +31,7 @@ permissions:
 jobs:
 
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     container: erlang:28
     steps:
 
@@ -60,7 +64,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     # Specify runner + deployment step
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
 
       - name: "Setup Pages"
